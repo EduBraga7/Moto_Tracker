@@ -1,0 +1,59 @@
+================================================================
+PROJETO: MOTO TRACKER (Minimalist Edition)
+================================================================
+OBJETIVO: 
+Sistema simples e direto para controle de gastos, consumo e 
+manutenção da moto Honda Bros 150 (2014).
+
+----------------------------------------------------------------
+1. FUNCIONALIDADES PRINCIPAIS (MVP - Mínimo Produto Viável)
+----------------------------------------------------------------
+
+[A] MÓDULO ABASTECIMENTO (Pit Stop)
+   - Input: KM Atual (Odômetro), Litros Abastecidos, Valor Total (R$).
+   - Output Automático: 
+     1. Média de Consumo (KM/L).
+     2. Custo por KM Rodado (R$/KM).
+     3. Preço do Combustível (R$/L).
+   - Armazenamento: Histórico cronológico.
+
+[B] MÓDULO OFICINA (Manutenção)
+   - Input: Data, KM Atual, Peça/Serviço, Valor, Observação (Marca/Mecânico).
+   - Output: Histórico de peças trocadas e custo de manutenção.
+   - Alertas Futuros: Troca de óleo, relação, pneu.
+
+----------------------------------------------------------------
+2. ESTRUTURA DE DADOS (O que vamos salvar no Banco de Dados)
+----------------------------------------------------------------
+
+TABELA: abastecimentos
+   id          (número único)
+   data        (data do abastecimento)
+   km          (odômetro atual)
+   litros      (quantidade)
+   valor       (quanto custou)
+   posto       (opcional: nome do posto)
+
+TABELA: manutencoes
+   id          (número único)
+   data        (data do serviço)
+   km          (odômetro atual)
+   item        (ex: "Kit Relação", "Pneu Traseiro")
+   valor       (custo total)
+   obs         (marca da peça ou nome da oficina)
+
+----------------------------------------------------------------
+3. TECNOLOGIAS (Stack) - ATUALIZADO
+----------------------------------------------------------------
+- Linguagem: Python 3
+- Interface: Web App (Flask)
+- Banco de Dados: Google Firebase (Firestore) -> Para acesso remoto via celular
+
+----------------------------------------------------------------
+4. ROTEIRO DE DESENVOLVIMENTO (Sprints)
+----------------------------------------------------------------
+PASSO 1: Criar o script Python básico que pede os dados e calcula a média na hora.
+PASSO 2: Criar o Banco de Dados (SQLite) e conectar com o Python para salvar os dados.
+PASSO 3: Criar a função de ver o Relatório (puxar os dados salvos).
+PASSO 4: Adicionar o módulo de Manutenção.
+PASSO 5: Transformar em Site/App visual.

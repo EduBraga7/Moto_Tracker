@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acesso Restrito</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='icon.png') }}">
+</head>
+<body style="display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #121212;">
+
+    <div class="card" style="width: 100%; max-width: 350px; padding: 30px; border-top: 4px solid #ff9800; background: #1e1e1e; border-radius: 8px;">
+        <h2 style="text-align: center; color: #ff9800; margin-bottom: 20px;">🔒 Acesso Moto Tracker</h2>
+        
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <p style="color: #ff5252; text-align: center; background: rgba(255,0,0,0.1); padding: 10px; border-radius: 4px; margin-bottom: 15px;">
+                    {{ messages[0] }}
+                </p>
+            {% endif %}
+        {% endwith %}
+
+        <form action="/login" method="POST">
+            <label style="color: #aaa;">Senha:</label>
+            <input type="password" name="senha" placeholder="Digite a senha..." required 
+                   style="width: 100%; padding: 10px; margin-top: 5px; margin-bottom: 20px; background: #121212; border: 1px solid #333; color: white; border-radius: 4px;">
+            
+            <button type="submit" style="width: 100%; padding: 12px; background: #ff9800; border: none; font-weight: bold; cursor: pointer; border-radius: 4px;">ENTRAR</button>
+        </form>
+    </div>
+
+</body>
+</html>

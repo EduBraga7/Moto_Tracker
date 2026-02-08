@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Editar Abastecimento</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1 style="font-size: 1.5rem; color: #ff9800;">✏️ Editar</h1>
+        </header>
+
+        <section class="card" style="border-top: 3px solid #ff9800;">
+            <form action="/atualizar" method="POST">
+                
+                <input type="hidden" name="id" value="{{ item.id }}">
+
+                <div class="input-group">
+                    <label>Odômetro (KM)</label>
+                    <input type="number" step="0.1" name="km" value="{{ item.km }}" required inputmode="decimal">
+                </div>
+
+                <div class="input-group">
+                    <label>Litros (L)</label>
+                    <input type="number" step="0.01" name="litros" value="{{ item.litros }}" required inputmode="decimal">
+                </div>
+
+                <div class="input-group">
+                    <label>Valor Total (R$)</label>
+                    <input type="number" step="0.01" name="valor" value="{{ item.valor }}" required inputmode="decimal">
+                </div>
+
+                <div class="botoes-editar">
+                    <a href="/" class="btn-cancelar">Cancelar</a>
+                    <button type="submit" class="btn-save" style="margin-top:0;">Salvar</button>
+                </div>
+            </form>
+        </section>
+    </div>
+
+    <script>
+        document.querySelectorAll('input[type="number"]').forEach(input => {
+            input.addEventListener('input', function() { this.value = this.value.replace(/,/g, '.'); });
+        });
+    </script>
+</body>
+</html>
