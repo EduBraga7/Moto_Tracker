@@ -4,11 +4,14 @@ from datetime import datetime
 def processar_abastecimento(texto, ultimo_km_registrado):
     partes = texto.split()
     if len(partes) != 3:
-        raise ValueError('Formato invalido para smart_text. Use: valor litros km_parcial')
+        return None
 
-    valor_total = float(partes[0])
-    litros = float(partes[1])
-    km_parcial = int(partes[2])
+    try:
+        valor_total = float(partes[0])
+        litros = float(partes[1])
+        km_parcial = int(partes[2])
+    except (TypeError, ValueError):
+        return None
 
     if ultimo_km_registrado is not None:
         km_antigo_total = int(float(ultimo_km_registrado))

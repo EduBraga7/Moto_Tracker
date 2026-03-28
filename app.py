@@ -2,7 +2,8 @@ import functools
 import os
 import json
 import logging
-from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
+import requests
+from flask import Flask, render_template, request, redirect, url_for, session, flash
 from datetime import datetime
 from dotenv import load_dotenv
 from services import processar_abastecimento
@@ -34,6 +35,19 @@ if not firebase_admin._apps:
         raise RuntimeError('FIREBASE_KEY invalida para inicializacao do Firebase.') from exc
 
 db = firestore.client()
+
+
+def responder_telegram(chat_id, texto):
+    bot_token = os.getenv('TELEGRAM_BOT_TOKEN')
+    if not bot_token:
+        logging.error('TELEGRAM_BOT_TOKEN nao configurado para responder mensagens.')
+        return
+
+    url = f'https://api.telegram.org/bot{bot_token}/sendMessage'
+    try:
+        requests.post(url, json={'chat_id': chat_id, 'text': texto}, timeout=10)
+    except Exception as exc:
+        logging.exception('Erro ao responder mensagem no Telegram: %s', exc)
 
 # --- DECORATOR: O "PORTEIRO" ---
 def login_required(f):
@@ -271,15 +285,15 @@ def webhook_telegram(token):
 
     if not expected_token:
         logging.error('TELEGRAM_WEBHOOK_TOKEN nao configurado no ambiente.')
-        return jsonify({'ok': False, 'error': 'Webhook token nao configurado'}), 500
+        return 'OK', 200
 
     if token != expected_token:
         logging.warning('Tentativa de webhook com token invalido.')
-        return jsonify({'ok': False, 'error': 'Token invalido'}), 403
+        return 'OK', 200
 
     if not allowed_user_id:
         logging.error('TELEGRAM_USER_ID nao configurado no ambiente.')
-        return jsonify({'ok': False, 'error': 'Usuario permitido nao configurado'}), 500
+        return 'OK', 200
 
     update = request.get_json(silent=True) or {}
     message = update.get('message') or update.get('edited_message') or {}
@@ -288,25 +302,33 @@ def webhook_telegram(token):
 
     if user_id != str(allowed_user_id):
         logging.warning('Mensagem ignorada de usuario nao autorizado: %s', user_id)
-        return jsonify({'ok': False, 'error': 'Usuario nao autorizado'}), 403
+        return 'OK', 200
 
     texto = (message.get('text') or '').strip()
     if not texto:
-        return jsonify({'ok': True, 'ignored': 'Mensagem sem texto'}), 200
+        return 'OK', 200
+
+    if texto.startswith('/'):
+        return 'OK', 200
+
+    chat = message.get('chat') or {}
+    chat_id = chat.get('id')
 
     try:
         docs = db.collection('abastecimentos').order_by('km', direction=firestore.Query.DESCENDING).limit(1).get()
         ultimo_km_registrado = docs[0].to_dict().get('km', 0) if len(docs) > 0 else None
 
         novo_abastecimento = processar_abastecimento(texto, ultimo_km_registrado)
+        if novo_abastecimento is None:
+            if chat_id is not None:
+                responder_telegram(chat_id, 'Ops! Formato invalido. Mande: valor litros km (Ex: 45.50 7.2 890)')
+            return 'OK', 200
+
         db.collection('abastecimentos').add(novo_abastecimento)
-        return jsonify({'ok': True, 'saved': True}), 200
-    except ValueError as exc:
-        logging.exception('Mensagem do Telegram em formato invalido: %s', exc)
-        return jsonify({'ok': False, 'error': str(exc)}), 400
+        return 'OK', 200
     except Exception as exc:
         logging.exception('Erro ao processar webhook do Telegram: %s', exc)
-        return jsonify({'ok': False, 'error': 'Erro interno'}), 500
+        return 'OK', 200
 
 # NECESSÁRIO PARA O VERCEL
 app = app
