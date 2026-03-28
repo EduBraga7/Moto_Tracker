@@ -1,33 +1,37 @@
 import functools
 import os
 import json
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+import logging
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from datetime import datetime
+from dotenv import load_dotenv
+from services import processar_abastecimento
 
 # --- IMPORTAÇÕES DO FIREBASE ---
 import firebase_admin
 from firebase_admin import credentials, firestore
 
 # --- CONFIGURAÇÃO INICIAL ---
+load_dotenv()
+logging.basicConfig(level=logging.INFO)
+
 app = Flask(__name__)
-app.secret_key = 'segredo_da_bros_2014' # Chave para criptografar o login
-SENHA_SECRETA = "admin" # <--- SUA SENHA AQUI
+app.secret_key = os.getenv('FLASK_SECRET_KEY', 'segredo_da_bros_2014') # Chave para criptografar o login
+SENHA_SECRETA = os.getenv('APP_PASSWORD', 'admin')
 
 # --- CONEXÃO COM O FIREBASE (VERSÃO SEGURA PARA DEPLOY) ---
 if not firebase_admin._apps:
-    # Verifica se existe a variável de ambiente (Vercel)
-    if os.getenv('FIREBASE_KEY'):
-        # Converte o texto da variável de ambiente de volta para um dicionário JSON
-        key_dict = json.loads(os.getenv('FIREBASE_KEY'))
-        cred = credentials.Certificate(key_dict)
-    else:
-        # Se não houver variável, tenta usar o arquivo local (Para seu PC)
-        try:
-            cred = credentials.Certificate("serviceAccountKey.json")
-        except:
-            print("❌ Erro: Chave do Firebase não encontrada localmente nem no ambiente.")
+    firebase_key = os.getenv('FIREBASE_KEY')
+    if not firebase_key:
+        raise RuntimeError('Variavel de ambiente FIREBASE_KEY ausente.')
 
-    firebase_admin.initialize_app(cred)
+    try:
+        key_dict = json.loads(firebase_key)
+        cred = credentials.Certificate(key_dict)
+        firebase_admin.initialize_app(cred)
+    except Exception as exc:
+        logging.exception('Falha ao inicializar Firebase com FIREBASE_KEY: %s', exc)
+        raise RuntimeError('FIREBASE_KEY invalida para inicializacao do Firebase.') from exc
 
 db = firestore.client()
 
@@ -173,21 +177,16 @@ def index():
 @login_required
 def adicionar_rapido():
     texto = request.form['smart_text']
-    partes = texto.split()
-    if len(partes) == 3:
-        try:
-            valor_total, litros, km_parcial = float(partes[0]), float(partes[1]), int(partes[2])
-            docs = db.collection('abastecimentos').order_by('km', direction=firestore.Query.DESCENDING).limit(1).get()
-            if len(docs) > 0:
-                ultimo_dado = docs[0].to_dict()
-                km_antigo_total = int(ultimo_dado.get('km', 0))
-                km_antigo_final = km_antigo_total % 1000 
-                km_base = (km_antigo_total // 1000) * 1000 + (1000 if km_parcial < km_antigo_final else 0)
-                km_final_real = km_base + km_parcial
-            else:
-                km_final_real = km_parcial 
-            db.collection('abastecimentos').add({'km': km_final_real, 'litros': litros, 'preco_total': valor_total, 'data': datetime.now().strftime('%d/%m/%Y %H:%M')})
-        except: pass
+    try:
+        docs = db.collection('abastecimentos').order_by('km', direction=firestore.Query.DESCENDING).limit(1).get()
+        ultimo_km_registrado = None
+        if len(docs) > 0:
+            ultimo_km_registrado = docs[0].to_dict().get('km', 0)
+
+        novo_abastecimento = processar_abastecimento(texto, ultimo_km_registrado)
+        db.collection('abastecimentos').add(novo_abastecimento)
+    except Exception as exc:
+        logging.exception('Erro ao adicionar abastecimento rapido: %s', exc)
     return redirect('/')
 
 @app.route('/adicionar_manutencao', methods=['POST'])
@@ -195,7 +194,8 @@ def adicionar_rapido():
 def adicionar_manutencao():
     try:
         db.collection('manutencoes').add({'km': float(request.form['km']), 'servico': request.form['servico'], 'valor': float(request.form['valor']), 'obs': request.form['obs'], 'data': datetime.now().strftime('%d/%m/%Y %H:%M')})
-    except: pass
+    except Exception as exc:
+        logging.exception('Erro ao adicionar manutencao: %s', exc)
     return redirect('/')
 
 @app.route('/salvar_config', methods=['POST'])
@@ -203,7 +203,8 @@ def adicionar_manutencao():
 def salvar_config():
     try:
         db.collection('configuracoes').add({'nome': request.form['nome'], 'km_vida_util': float(request.form['km'])})
-    except: pass
+    except Exception as exc:
+        logging.exception('Erro ao salvar configuracao: %s', exc)
     return redirect('/')
 
 @app.route('/deletar/<id>')
@@ -239,7 +240,8 @@ def atualizar():
     id = request.form['id']
     try:
         db.collection('abastecimentos').document(id).update({'km': float(request.form['km']), 'litros': float(request.form['litros']), 'preco_total': float(request.form['valor'])})
-    except: pass
+    except Exception as exc:
+        logging.exception('Erro ao atualizar abastecimento id=%s: %s', id, exc)
     return redirect('/')
 
 @app.route('/editar_manutencao/<id>')
@@ -257,8 +259,61 @@ def atualizar_manutencao():
     id = request.form['id']
     try:
         db.collection('manutencoes').document(id).update({'km': float(request.form['km']), 'servico': request.form['servico'], 'valor': float(request.form['valor']), 'obs': request.form['obs']})
-    except: pass
+    except Exception as exc:
+        logging.exception('Erro ao atualizar manutencao id=%s: %s', id, exc)
     return redirect('/')
+
+
+@app.route('/webhook/telegram/<token>', methods=['POST'])
+def webhook_telegram(token):
+    expected_token = os.getenv('TELEGRAM_WEBHOOK_TOKEN')
+    allowed_user_id = os.getenv('TELEGRAM_USER_ID')
+
+    if not expected_token:
+        logging.error('TELEGRAM_WEBHOOK_TOKEN nao configurado no ambiente.')
+        return jsonify({'ok': False, 'error': 'Webhook token nao configurado'}), 500
+
+    if token != expected_token:
+        logging.warning('Tentativa de webhook com token invalido.')
+        return jsonify({'ok': False, 'error': 'Token invalido'}), 403
+
+    if not allowed_user_id:
+        logging.error('TELEGRAM_USER_ID nao configurado no ambiente.')
+        return jsonify({'ok': False, 'error': 'Usuario permitido nao configurado'}), 500
+
+    update = request.get_json(silent=True) or {}
+    message = update.get('message') or update.get('edited_message') or {}
+    from_user = message.get('from') or {}
+    user_id = str(from_user.get('id', ''))
+
+    if user_id != str(allowed_user_id):
+        logging.warning('Mensagem ignorada de usuario nao autorizado: %s', user_id)
+        return jsonify({'ok': False, 'error': 'Usuario nao autorizado'}), 403
+
+    texto = (message.get('text') or '').strip()
+    if not texto:
+        return jsonify({'ok': True, 'ignored': 'Mensagem sem texto'}), 200
+
+    try:
+        docs = db.collection('abastecimentos').order_by('km', direction=firestore.Query.DESCENDING).limit(1).get()
+        ultimo_km_registrado = docs[0].to_dict().get('km', 0) if len(docs) > 0 else None
+
+        novo_abastecimento = processar_abastecimento(texto, ultimo_km_registrado)
+        db.collection('abastecimentos').add(novo_abastecimento)
+        return jsonify({'ok': True, 'saved': True}), 200
+    except ValueError as exc:
+        logging.exception('Mensagem do Telegram em formato invalido: %s', exc)
+        return jsonify({'ok': False, 'error': str(exc)}), 400
+    except Exception as exc:
+        logging.exception('Erro ao processar webhook do Telegram: %s', exc)
+        return jsonify({'ok': False, 'error': 'Erro interno'}), 500
 
 # NECESSÁRIO PARA O VERCEL
 app = app
+
+if __name__ == '__main__':
+    app.run(
+        host='0.0.0.0',
+        port=int(os.getenv('PORT', 5000)),
+        debug=os.getenv('FLASK_ENV', 'development') == 'development'
+    )

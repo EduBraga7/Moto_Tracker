@@ -6,28 +6,29 @@
     <title>Acesso Restrito</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='icon.png') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Teko:wght@500;600;700&display=swap" rel="stylesheet">
 </head>
-<body style="display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #121212;">
+<body>
 
-    <div class="card" style="width: 100%; max-width: 350px; padding: 30px; border-top: 4px solid #ff9800; background: #1e1e1e; border-radius: 8px;">
-        <h2 style="text-align: center; color: #ff9800; margin-bottom: 20px;">🔒 Acesso Moto Tracker</h2>
-        
-        {% with messages = get_flashed_messages() %}
-            {% if messages %}
-                <p style="color: #ff5252; text-align: center; background: rgba(255,0,0,0.1); padding: 10px; border-radius: 4px; margin-bottom: 15px;">
-                    {{ messages[0] }}
-                </p>
-            {% endif %}
-        {% endwith %}
-
-        <form action="/login" method="POST">
-            <label style="color: #aaa;">Senha:</label>
-            <input type="password" name="senha" placeholder="Digite a senha..." required 
-                   style="width: 100%; padding: 10px; margin-top: 5px; margin-bottom: 20px; background: #121212; border: 1px solid #333; color: white; border-radius: 4px;">
+    <main class="login-shell">
+        <div class="card login-card">
+            <h2>🔒 Acesso Moto Tracker</h2>
             
-            <button type="submit" style="width: 100%; padding: 12px; background: #ff9800; border: none; font-weight: bold; cursor: pointer; border-radius: 4px;">ENTRAR</button>
-        </form>
-    </div>
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    <p class="alert">{{ messages[0] }}</p>
+                {% endif %}
+            {% endwith %}
+
+            <form action="/login" method="POST">
+                <label class="login-label">Senha:</label>
+                <input type="password" name="senha" placeholder="Digite a senha..." required>
+                <button type="submit" class="login-submit">ENTRAR</button>
+            </form>
+        </div>
+    </main>
 
 </body>
 </html>

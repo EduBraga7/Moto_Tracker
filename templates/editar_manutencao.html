@@ -5,15 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Editar Manutenção</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Teko:wght@500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
     <div class="container">
         <header>
-            <h1 style="font-size: 1.5rem; color: #00bcd4;">🔧 Editar</h1>
+            <h1 class="page-title">🔧 Editar manutenção</h1>
         </header>
 
-        <section class="card" style="border-top: 3px solid #00bcd4;">
+        <section class="card" style="padding: 16px;">
             <form action="/atualizar_manutencao" method="POST">
                 
                 <input type="hidden" name="id" value="{{ item.id }}">
@@ -40,7 +43,7 @@
 
                 <div class="botoes-editar">
                     <a href="/" class="btn-cancelar">Cancelar</a>
-                    <button type="submit" class="btn-save" style="background-color: #00bcd4; margin-top:0;">Salvar</button>
+                    <button type="submit" class="btn-save">Salvar</button>
                 </div>
             </form>
         </section>
