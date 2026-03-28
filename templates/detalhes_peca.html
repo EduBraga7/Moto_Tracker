@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Detalhes da Peça - Moto Tracker</title>
+
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
+    <link rel="icon" type="image/png" sizes="96x96" href="{{ url_for('static', filename='favicon-96x96.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicon-16x16.png') }}">
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <main class="container peca-detail-page">
+        <a href="{{ url_for('index') }}" class="btn-toggle back-dashboard-btn">
+            <span><i class="fa-solid fa-arrow-left"></i> Voltar ao Dashboard</span>
+        </a>
+
+        <header class="glass peca-hero">
+            <h1><i class="{{ icone_peca }}"></i> {{ nome_peca }}</h1>
+            <p>Visão detalhada de desgaste, histórico e ações rápidas de manutenção.</p>
+        </header>
+
+        <section class="peca-mini-stats">
+            <article class="glass peca-mini-card">
+                <span class="mini-label"><i class="fa-regular fa-calendar-check"></i> Previsão</span>
+                <strong>Próxima troca estimada para: {{ proxima_troca_data }}</strong>
+                <small>Média diária: {{ '%.1f'|format(media_km_dia) }} km/dia</small>
+            </article>
+            <article class="glass peca-mini-card">
+                <span class="mini-label"><i class="fa-solid fa-sack-dollar"></i> Custo</span>
+                <strong>Total investido nesta peça: {{ total_investido_peca_fmt }}</strong>
+                <small>Baseado no histórico do veículo ativo</small>
+            </article>
+            <article class="glass peca-mini-card">
+                <span class="mini-label"><i class="fa-solid fa-flask"></i> Especificação</span>
+                <strong>Recomendado: {{ especificacao_peca }}</strong>
+                <small>Consulte o manual para validação final</small>
+            </article>
+        </section>
+
+        <section class="peca-grid">
+            <article class="glass peca-panel">
+                <h3><i class="fa-solid fa-chart-line"></i> Gráfico de Desgaste</h3>
+                {% if nome_peca | lower == 'óleo' or nome_peca | lower == 'oleo' %}
+                {% set percentual_rodado = [100, ((km_rodado | default(0)) / (km_limite | default(1000)) * 100)] | min %}
+                <div>
+                    <div class="vida-meta" style="margin-top: 6px; margin-bottom: 8px;">
+                        <span class="vida-pct" style="color: var(--cyan-soft);">{{ percentual_rodado | round(0, 'floor') | int }}%</span>
+                        <span class="km-restante">Faltam {{ km_restante | default(1000) }} km para a próxima troca</span>
+                    </div>
+                    <div class="progress-bar-bg" style="height: 12px; background: rgba(8, 12, 20, 0.75); border: 1px solid rgba(58, 226, 242, 0.25);">
+                        <div class="progress-bar-fill" style="width: {{ percentual_rodado | round(2) }}%; background: linear-gradient(90deg, #24cde0, #3ae2f2, #9bf9ff); box-shadow: 0 0 8px rgba(58, 226, 242, 0.45), 0 0 16px rgba(58, 226, 242, 0.25);"></div>
+                    </div>
+                    <div class="peca-cycles-chart-wrap">
+                        <canvas id="oilCyclesChart" aria-label="Gráfico dos últimos ciclos de óleo"></canvas>
+                    </div>
+                </div>
+                {% else %}
+                <div class="peca-placeholder">
+                    <p>Sem gráfico disponível para esta peça no momento.</p>
+                </div>
+                {% endif %}
+            </article>
+
+            <article class="glass peca-panel">
+                <h3><i class="fa-solid fa-clock-rotate-left"></i> Histórico de Trocas</h3>
+                {% if nome_peca | lower == 'óleo' or nome_peca | lower == 'oleo' %}
+                <div class="peca-history-table-wrap">
+                    <table class="peca-history-table">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>KM da Troca</th>
+                                <th>Valor</th>
+                                <th>Observação</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in manutencoes_peca %}
+                            <tr>
+                                <td>{{ item.data }}</td>
+                                <td>{{ item.km | int }}</td>
+                                <td>R$ {{ '%.2f'|format(item.valor) }}</td>
+                                <td>{{ item.obs if item.obs else '-' }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4">Nenhuma troca de óleo registrada para o veículo ativo.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="peca-placeholder">
+                    <p>Em breve: lista cronológica de trocas desta peça.</p>
+                </div>
+                {% endif %}
+            </article>
+        </section>
+
+        {% if nome_peca_normalizado == 'oleo' %}
+        <section class="glass peca-quick-actions">
+            <h3><i class="fa-solid fa-bolt"></i> Ações Rápidas</h3>
+            <div class="peca-quick-actions-row">
+                <form action="{{ url_for('adicionar_oleo_100ml') }}" method="POST">
+                    <button type="submit" class="btn-add peca-quick-btn"><i class="fa-solid fa-droplet"></i> Adicionar 100ml</button>
+                </form>
+                <a href="{{ manual_bros_pdf_url }}" class="toolbar-btn export peca-manual-link" target="_blank" rel="noopener noreferrer">
+                    <i class="fa-solid fa-file-pdf"></i>
+                    <span>Manual da Bros (PDF)</span>
+                </a>
+            </div>
+        </section>
+        {% endif %}
+
+        <a href="/oficina?peca={{ nome_peca | urlencode }}&km={{ km_atual_veiculo }}" class="quick-submit peca-cta">Registrar Manutenção</a>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        (function initOilCyclesChart() {
+            const labels = {{ ciclos_labels | safe }};
+            const values = {{ ciclos_values | safe }};
+            const canvas = document.getElementById('oilCyclesChart');
+
+            if (!canvas || !Array.isArray(labels) || !Array.isArray(values) || labels.length === 0 || values.length === 0) {
+                return;
+            }
+
+            const ctx = canvas.getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: 'KM por ciclo',
+                        data: values,
+                        borderRadius: 10,
+                        backgroundColor: [
+                            'rgba(58, 226, 242, 0.75)',
+                            'rgba(155, 249, 255, 0.72)',
+                            'rgba(77, 219, 143, 0.72)',
+                            'rgba(255, 212, 95, 0.72)',
+                            'rgba(255, 106, 106, 0.72)'
+                        ],
+                        borderColor: 'rgba(180, 244, 255, 0.92)',
+                        borderWidth: 1.2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => `${ctx.parsed.y} km`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: '#9fb2d6' },
+                            grid: { color: 'rgba(130, 160, 210, 0.12)' }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                color: '#9fb2d6',
+                                callback: (value) => `${value} km`
+                            },
+                            grid: { color: 'rgba(130, 160, 210, 0.16)' }
+                        }
+                    }
+                }
+            });
+        })();
+    </script>
+</body>
+</html>

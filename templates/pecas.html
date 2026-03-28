@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Inventário de Peças - Moto Tracker</title>
+
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
+    <link rel="icon" type="image/png" sizes="96x96" href="{{ url_for('static', filename='favicon-96x96.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicon-16x16.png') }}">
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <img src="{{ url_for('static', filename='favicon-96x96.png') }}" alt="Moto Tracker" class="sidebar-logo">
+            <div>
+                <strong>Moto Tracker</strong>
+                <p>Controle inteligente</p>
+            </div>
+        </div>
+        <nav class="sidebar-menu" aria-label="Menu lateral">
+            <a href="{{ url_for('index') }}" class="sidebar-link"><i class="fa-solid fa-chart-pie"></i> Dashboard</a>
+            <a href="{{ url_for('pecas') }}" class="sidebar-link active"><i class="fa-solid fa-gears"></i> Peças &amp; Oficina</a>
+            <a href="{{ url_for('pecas') }}#AbaConfiguracoes" class="sidebar-link"><i class="fa-solid fa-sliders"></i> Ajustes</a>
+        </nav>
+    </aside>
+
+    <nav class="bottom-nav" aria-label="Navegação mobile">
+        <a href="{{ url_for('index') }}" class="bottom-link" title="Dashboard"><i class="fa-solid fa-chart-pie"></i></a>
+        <a href="{{ url_for('pecas') }}" class="bottom-link active" title="Peças & Oficina"><i class="fa-solid fa-gears"></i></a>
+        <a href="{{ url_for('pecas') }}#AbaConfiguracoes" class="bottom-link" title="Ajustes"><i class="fa-solid fa-sliders"></i></a>
+    </nav>
+
+    <main class="container pecas-page">
+        <a href="{{ url_for('index') }}" class="btn-toggle pecas-back-btn">
+            <span><i class="fa-solid fa-arrow-left"></i> Voltar</span>
+        </a>
+
+        <header class="glass pecas-head">
+            <h1><i class="fa-solid fa-gears"></i> Inventário de Peças</h1>
+            <p>Gerencie inventário, manutenção e configurações em um único lugar.</p>
+        </header>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="pecas-flash-stack" aria-live="polite">
+            {% for category, message in messages %}
+            <div class="alert {{ 'alert-success' if category == 'success' else 'alert-error' }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <div class="tabs glass pecas-tabs">
+            <button class="tab-btn active" onclick="openPecasTab(event, 'AbaVeiculos')"><i class="fa-solid fa-motorcycle"></i> Meus Veículos</button>
+            <button class="tab-btn" onclick="openPecasTab(event, 'AbaManutencao')"><i class="fa-solid fa-screwdriver-wrench"></i> Nova Manutenção</button>
+            <button class="tab-btn" onclick="openPecasTab(event, 'AbaConfiguracoes')"><i class="fa-solid fa-sliders"></i> Configurar Limites</button>
+        </div>
+
+        <section id="AbaVeiculos" class="tab-content active pecas-tab-content">
+            <div class="pecas-veiculos-grid">
+                {% for veiculo in veiculos %}
+                <a href="{{ url_for('ativar_veiculo', veiculo_id=veiculo.id) }}" class="veiculo-card-link" title="Ativar {{ veiculo.apelido | default(veiculo.modelo, true) }}">
+                    <article class="glass veiculo-card {% if veiculo_ativo and veiculo_ativo.id == veiculo.id %}active{% endif %}">
+                        <div class="veiculo-card-head">
+                            <h3><i class="fa-solid fa-motorcycle"></i> {{ veiculo.apelido | default('Minha Moto', true) }}</h3>
+                            {% if veiculo_ativo and veiculo_ativo.id == veiculo.id %}
+                            <span class="veiculo-ativo-badge"><i class="fa-solid fa-circle-check"></i> Ativo</span>
+                            {% endif %}
+                        </div>
+                        <div class="veiculo-meta">
+                            <span>Modelo: {{ veiculo.modelo | default('Nao informado', true) }}</span>
+                            <span>Ano: {{ veiculo.ano_modelo | default(veiculo.ano, true) | default('N/A', true) }}</span>
+                            <span>Codigo FIPE: {{ veiculo.fipe_codigo | default('N/A', true) }}</span>
+                        </div>
+                        <span class="fipe-tag"><i class="fa-solid fa-dollar-sign"></i> Valor FIPE: {{ veiculo.valor_fipe | default('N/A', true) }}</span>
+                    </article>
+                </a>
+                {% else %}
+                <article class="glass veiculo-card">
+                    <div class="veiculo-card-head">
+                        <h3><i class="fa-solid fa-motorcycle"></i> Nenhum veículo cadastrado</h3>
+                    </div>
+                    <div class="veiculo-meta">
+                        <span>Cadastre seu primeiro veículo para ativar o painel.</span>
+                    </div>
+                </article>
+                {% endfor %}
+            </div>
+
+            <button type="button" id="toggleNovoVeiculo" class="quick-submit novo-veiculo-btn">+ Cadastrar Novo Veículo</button>
+
+            <div id="novoVeiculoFormBox" class="form-box glass hidden">
+                <h3>Cadastro de Ativo</h3>
+                <form id="novoVeiculoForm" action="/cadastrar_veiculo" method="POST">
+                    <input type="text" name="apelido" placeholder="Apelido do Veículo (Ex: Minha Bros 150)" required>
+                    <input type="text" name="fipe_codigo" placeholder="Ex: 811090-2" required>
+                    <small class="fipe-help-link">
+                        <a href="https://veiculos.fipe.org.br" target="_blank" rel="noopener noreferrer">Consultar código FIPE</a>
+                    </small>
+                    <input type="number" name="ano" placeholder="Ex: 2014" required inputmode="numeric" min="1900" max="2100">
+                    <div class="modal-actions">
+                        <button type="button" id="cancelNovoVeiculo" class="btn-cancelar">Cancelar</button>
+                        <button type="submit" class="btn-save btn-save-ativo">Salvar Ativo</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <section id="AbaManutencao" class="tab-content pecas-tab-content">
+            <div class="form-box glass">
+                <h3>Nova Manutenção</h3>
+                <form action="/adicionar_manutencao" method="POST">
+                    <select name="peca" required>
+                        <option value="">Selecione a peça</option>
+                        <option value="Óleo">Óleo</option>
+                        <option value="Relação">Relação</option>
+                        <option value="Pneu">Pneu</option>
+                    </select>
+                    <input type="number" step="any" name="km" placeholder="KM Atual (Total)" required inputmode="decimal">
+                    <input type="number" step="any" name="valor" placeholder="Valor (R$)" required inputmode="decimal">
+                    <input type="datetime-local" name="data" required>
+                    <input type="text" name="obs" placeholder="Obs (Opcional)">
+                    <button type="submit" class="btn-add">Registrar Troca</button>
+                </form>
+            </div>
+
+            <button type="button" class="btn-toggle" onclick="toggleDisplay('listaOficinaPecas', 'setaHistOficinaPecas', 'block')">
+                <span><i class="fa-solid fa-clock-rotate-left"></i> Histórico de Oficina</span>
+                <span id="setaHistOficinaPecas"><i class="fa-solid fa-chevron-down"></i></span>
+            </button>
+
+            <div id="listaOficinaPecas" class="list-container" style="display: block;">
+                {% for item in manutencoes %}
+                <div class="list-item oficina-item">
+                    <div class="item-info">
+                        <span class="servico">{{ item.servico }}</span>
+                        <div class="details-row">
+                            <span>KM {{ item.km | int }}</span>
+                            <span class="valor">R$ {{ item.valor }}</span>
+                        </div>
+                        {% if item.obs %}<p class="obs">{{ item.obs }}</p>{% endif %}
+                    </div>
+                    <div class="item-actions">
+                        <span class="data">{{ item.data }}</span>
+                        <div class="btn-group">
+                            <a href="/editar_manutencao/{{ item.id }}" class="btn-icon edit" title="Editar"><i class="fa-solid fa-pen"></i></a>
+                            <a href="/deletar_manutencao/{{ item.id }}" class="btn-icon delete" title="Excluir" onclick="return confirm('Apagar?')"><i class="fa-solid fa-trash"></i></a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section id="AbaConfiguracoes" class="tab-content pecas-tab-content">
+            <div class="form-box config-box glass">
+                <h3>Cadastrar Nova Peça</h3>
+                <form action="/salvar_config" method="POST">
+                    <input type="text" name="nome" placeholder="Nome da peça" required>
+                    <input type="number" name="km" placeholder="Limite (KM)" required inputmode="numeric">
+                    <button type="submit" class="btn-config">Cadastrar Peça</button>
+                </form>
+            </div>
+
+            <div class="form-box config-box glass">
+                <h3>Peças Cadastradas</h3>
+            </div>
+
+            <button type="button" class="btn-toggle" onclick="toggleDisplay('listaPecasConfig', 'setaPecasConfig', 'block')">
+                <span><i class="fa-solid fa-gears"></i> Lista de Limites</span>
+                <span id="setaPecasConfig"><i class="fa-solid fa-chevron-down"></i></span>
+            </button>
+
+            <div id="listaPecasConfig" class="list-container" style="display: block;">
+                {% for item in configuracoes %}
+                <div class="list-item config-item">
+                    <div class="item-info">
+                        <span class="peca-nome">{{ item.nome }}</span>
+                        <span class="peca-vida">Meta: {{ item.km_vida_util | default(item.km, true) | int }} km</span>
+                    </div>
+                    <div class="btn-group">
+                        <button
+                            type="button"
+                            class="btn-icon edit config-edit-btn"
+                            title="Editar"
+                            data-id="{{ item.id }}"
+                            data-nome="{{ item.nome }}"
+                            data-km="{{ item.km_vida_util | default(item.km, true) }}"
+                        ><i class="fa-solid fa-pen"></i></button>
+                        <a href="/deletar_config/{{ item.id }}" class="btn-icon delete" title="Excluir"><i class="fa-solid fa-trash"></i></a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div id="configEditBox" class="form-box glass hidden">
+                <h3>Editar Limite da Peça</h3>
+                <form id="configEditForm" method="POST" action="/atualizar_config/">
+                    <input type="text" id="configNome" name="nome" placeholder="Nome da peça" required>
+                    <input type="number" id="configKm" name="km_vida_util" placeholder="Limite (KM)" required inputmode="numeric">
+                    <div class="modal-actions">
+                        <button type="button" id="cancelConfigEdit" class="btn-cancelar">Cancelar</button>
+                        <button type="submit" class="btn-save">Salvar</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        function openPecasTab(evt, tabName) {
+            const tabcontent = document.getElementsByClassName('pecas-tab-content');
+            for (let i = 0; i < tabcontent.length; i += 1) {
+                tabcontent[i].style.display = 'none';
+                tabcontent[i].classList.remove('active');
+            }
+
+            const tablinks = document.querySelectorAll('.pecas-tabs .tab-btn');
+            tablinks.forEach((link) => link.classList.remove('active'));
+
+            const tab = document.getElementById(tabName);
+            tab.style.display = 'block';
+            tab.classList.add('active');
+            evt.currentTarget.classList.add('active');
+        }
+
+        document.getElementById('AbaVeiculos').style.display = 'block';
+
+        function toggleDisplay(idArea, idSeta, displayType) {
+            const area = document.getElementById(idArea);
+            const seta = document.getElementById(idSeta);
+
+            if (area.style.display === 'none' || area.style.display === '') {
+                area.style.display = displayType;
+                seta.innerHTML = '<i class="fa-solid fa-chevron-down"></i>';
+            } else {
+                area.style.display = 'none';
+                seta.innerHTML = '<i class="fa-solid fa-chevron-right"></i>';
+            }
+        }
+
+        const configEditBox = document.getElementById('configEditBox');
+        const configEditForm = document.getElementById('configEditForm');
+        const configNome = document.getElementById('configNome');
+        const configKm = document.getElementById('configKm');
+        const cancelConfigEdit = document.getElementById('cancelConfigEdit');
+        const toggleNovoVeiculo = document.getElementById('toggleNovoVeiculo');
+        const novoVeiculoFormBox = document.getElementById('novoVeiculoFormBox');
+        const cancelNovoVeiculo = document.getElementById('cancelNovoVeiculo');
+
+        document.querySelectorAll('.config-edit-btn').forEach((button) => {
+            button.addEventListener('click', function () {
+                const id = this.getAttribute('data-id');
+                const nome = this.getAttribute('data-nome');
+                const km = this.getAttribute('data-km');
+
+                if (!id) {
+                    return;
+                }
+
+                configEditForm.setAttribute('action', `/atualizar_config/${id}`);
+                configNome.value = nome || '';
+                configKm.value = km || '';
+                configEditBox.classList.remove('hidden');
+            });
+        });
+
+        cancelConfigEdit.addEventListener('click', function () {
+            configEditBox.classList.add('hidden');
+        });
+
+        toggleNovoVeiculo.addEventListener('click', function () {
+            novoVeiculoFormBox.classList.toggle('hidden');
+        });
+
+        cancelNovoVeiculo.addEventListener('click', function () {
+            novoVeiculoFormBox.classList.add('hidden');
+        });
+    </script>
+</body>
+</html>

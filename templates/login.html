@@ -3,18 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Acesso Restrito</title>
+    <title>Portal de Acesso Moto Tracker</title>
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
+    <link rel="icon" type="image/png" sizes="96x96" href="{{ url_for('static', filename='favicon-96x96.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicon-16x16.png') }}">
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+    <meta name="theme-color" content="#121212">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link rel="icon" type="image/png" href="{{ url_for('static', filename='icon.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Teko:wght@500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
 
     <main class="login-shell">
-        <div class="card login-card">
-            <h2>🔒 Acesso Moto Tracker</h2>
+        <div class="login-card">
+            <div class="login-header">
+                <h2 class="login-title">
+                    <span class="login-badge"><i class="fa-solid fa-lock"></i></span>
+                    <img src="{{ url_for('static', filename='favicon-96x96.png') }}" alt="Moto Tracker" class="login-logo">
+                    Portal de Acesso Moto Tracker
+                </h2>
+            </div>
             
             {% with messages = get_flashed_messages() %}
                 {% if messages %}
@@ -24,11 +39,35 @@
 
             <form action="/login" method="POST">
                 <label class="login-label">Senha:</label>
-                <input type="password" name="senha" placeholder="Digite a senha..." required>
+                <div class="password-field">
+                    <input id="senhaInput" class="login-input" type="password" name="senha" placeholder="Digite sua senha de acesso" required>
+                    <button type="button" class="password-toggle" id="toggleSenha" aria-label="Mostrar senha">
+                        <i class="fa-regular fa-eye"></i>
+                    </button>
+                </div>
                 <button type="submit" class="login-submit">ENTRAR</button>
             </form>
+
+            <div class="security-note">
+                <p>Modulo de Seguranca v1.0 | Offline</p>
+                <p>Desenvolvido por Eduardo Braga | ADS</p>
+            </div>
         </div>
     </main>
+
+    <script>
+        const senhaInput = document.getElementById('senhaInput');
+        const toggleSenha = document.getElementById('toggleSenha');
+
+        toggleSenha.addEventListener('click', function () {
+            const tipoAtual = senhaInput.getAttribute('type');
+            const novoTipo = tipoAtual === 'password' ? 'text' : 'password';
+            senhaInput.setAttribute('type', novoTipo);
+            this.innerHTML = novoTipo === 'password'
+                ? '<i class="fa-regular fa-eye"></i>'
+                : '<i class="fa-regular fa-eye-slash"></i>';
+        });
+    </script>
 
 </body>
 </html>

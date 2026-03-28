@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Oficina - Moto Tracker</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header class="topbar">
+            <div class="header-inner">
+                <div class="brand">
+                    <h1><img src="{{ url_for('static', filename='favicon-96x96.png') }}" alt="Moto Tracker" class="brand-logo"> MOTO TRACKER</h1>
+                    <p>Command Center da Oficina</p>
+                </div>
+                <nav class="topbar-nav" aria-label="Navegação principal">
+                    <a href="/" class="topbar-link {% if request.path == '/' %}active{% endif %}">Painel</a>
+                    <a href="/garagem" class="topbar-link {% if request.path == '/garagem' or request.path == '/oficina' %}active{% endif %}">Oficina</a>
+                    <a href="/veiculos" class="topbar-link {% if request.path == '/veiculos' %}active{% endif %}">Veículos</a>
+                </nav>
+                <a href="/logout" class="logout-btn" title="Sair"><i class="fa-solid fa-right-from-bracket"></i></a>
+            </div>
+        </header>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="pecas-flash-stack" aria-live="polite">
+            {% for category, message in messages %}
+            <div class="alert {{ 'alert-success' if category == 'success' else 'alert-error' }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <section class="oficina-command-grid">
+            <article class="glass oficina-health-panel">
+                <div class="header-pecas">
+                    <h3><i class="fa-solid fa-heart-pulse"></i> Saúde das Peças</h3>
+                </div>
+                <div class="health-grid oficina-health-grid">
+                    {% for peca in pecas_dinamicas %}
+                    {% set nome_lower = peca.nome_peca | lower %}
+                    {% set classe_cor = 'vida-ok' if peca.porcentagem < 75 else ('vida-alerta' if peca.porcentagem <= 90 else 'vida-critica') %}
+                    <a href="{{ url_for('detalhes_peca', nome_peca=peca.nome_peca) }}" class="health-link" title="Ver detalhes de {{ peca.nome_peca }}">
+                        <article class="health-item oficina-health-item" data-peca="{{ peca.nome_peca }}">
+                            <div class="health-header">
+                                <span class="peca-icon">
+                                    {% if 'oleo' in nome_lower %}<i class="fa-solid fa-oil-can"></i>
+                                    {% elif 'pneu' in nome_lower %}<i class="fa-solid fa-circle-notch"></i>
+                                    {% elif 'relacao' in nome_lower %}<i class="fa-solid fa-link"></i>
+                                    {% else %}<i class="fa-solid fa-gear"></i>{% endif %}
+                                </span>
+                                <div>
+                                    <strong>{{ peca.nome_peca }}</strong>
+                                    <p class="subtext">{{ peca.km_rodado }} / {{ peca.km_rodado + peca.km_restante }} KM</p>
+                                </div>
+                            </div>
+                            <div class="vida-meta">
+                                <span class="vida-pct {{ classe_cor }}">{{ peca.porcentagem | int }}%</span>
+                                <span class="km-restante">Restam {{ peca.km_restante }} km</span>
+                            </div>
+                            <div class="progress-bar-bg">
+                                <div class="progress-bar-fill {{ classe_cor }}" style="width: {{ peca.porcentagem }}%;"></div>
+                            </div>
+                        </article>
+                    </a>
+                    {% else %}
+                    <div class="oficina-empty-health">
+                        <i class="fa-regular fa-circle-dot"></i>
+                        <p>Sem dados de desgaste para o veículo ativo.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </article>
+
+            <article class="glass oficina-action-panel">
+                <h3><i class="fa-solid fa-screwdriver-wrench"></i> Nova Manutenção</h3>
+                <form action="/adicionar_manutencao" method="POST">
+                    <select name="peca" id="pecaSelect" required>
+                        <option value="">Selecione a peça</option>
+                        <option value="Óleo">Óleo</option>
+                        <option value="Relação">Relação</option>
+                        <option value="Pneu">Pneu</option>
+                    </select>
+                    <input type="number" step="any" name="km" id="kmInputManutencao" placeholder="KM Atual (Total)" required inputmode="decimal">
+                    <input type="number" step="any" name="valor" placeholder="Valor (R$)" required inputmode="decimal">
+                    <input type="datetime-local" name="data" required>
+                    <input type="text" name="obs" placeholder="Obs (Opcional)">
+                    <button type="submit" class="btn-add oficina-submit">Registrar Troca</button>
+                </form>
+            </article>
+        </section>
+
+        <button type="button" class="btn-toggle" onclick="toggleDisplay('listaOficina', 'setaOficina', 'block')">
+            <span><i class="fa-solid fa-clock-rotate-left"></i> Histórico de Oficina</span>
+            <span id="setaOficina"><i class="fa-solid fa-chevron-down"></i></span>
+        </button>
+
+        <div id="listaOficina" class="list-container" style="display: block;">
+            {% for item in manutencoes %}
+            <div class="list-item oficina-item">
+                <div class="item-info">
+                    <span class="servico">{{ item.servico }}</span>
+                    <div class="details-row">
+                        <span>KM {{ item.km | int }}</span>
+                        <span class="valor">R$ {{ item.valor }}</span>
+                    </div>
+                    {% if item.obs %}<p class="obs">{{ item.obs }}</p>{% endif %}
+                </div>
+                <div class="item-actions">
+                    <span class="data">{{ item.data }}</span>
+                    <div class="btn-group">
+                        <a href="/editar_manutencao/{{ item.id }}" class="btn-icon edit" title="Editar"><i class="fa-solid fa-pen"></i></a>
+                        <a href="/deletar_manutencao/{{ item.id }}" class="btn-icon delete" title="Excluir" onclick="return confirm('Apagar?')"><i class="fa-solid fa-trash"></i></a>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="list-item oficina-empty-history">
+                <div class="item-info oficina-empty-content">
+                    <i class="fa-regular fa-folder-open"></i>
+                    <span class="servico">Ainda não há manutenções para o veículo ativo.</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <script>
+        function normalizarTexto(value) {
+            return (value || '')
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .toLowerCase()
+                .trim();
+        }
+
+        function aplicarDeepLinkPeca() {
+            const params = new URLSearchParams(window.location.search);
+            const pecaInicial = {{ peca_preselecionada | default('', true) | tojson }};
+            const kmInicial = {{ km_preselecionado | default('', true) | tojson }};
+            const pecaParam = params.get('peca') || pecaInicial;
+            const kmParam = params.get('km') || kmInicial;
+            const pecaSelect = document.getElementById('pecaSelect');
+            const kmInput = document.getElementById('kmInputManutencao');
+
+            if (kmInput && kmParam) {
+                kmInput.value = String(kmParam).trim();
+            }
+
+            if (!pecaParam || !pecaSelect) {
+                return;
+            }
+
+            const alvo = normalizarTexto(pecaParam);
+            let optionSelecionada = '';
+            for (const option of Array.from(pecaSelect.options)) {
+                if (normalizarTexto(option.value) === alvo) {
+                    pecaSelect.value = option.value;
+                    optionSelecionada = option.value;
+                    break;
+                }
+            }
+
+            if (!optionSelecionada) {
+                return;
+            }
+
+            document.querySelectorAll('.oficina-health-item').forEach((card) => {
+                const nomePecaCard = normalizarTexto(card.dataset.peca || '');
+                if (nomePecaCard === normalizarTexto(optionSelecionada)) {
+                    card.classList.add('health-focus-blink');
+                    setTimeout(() => card.classList.remove('health-focus-blink'), 2800);
+                }
+            });
+        }
+
+        function toggleDisplay(idArea, idSeta, displayType) {
+            const area = document.getElementById(idArea);
+            const seta = document.getElementById(idSeta);
+
+            if (area.style.display === 'none' || area.style.display === '') {
+                area.style.display = displayType;
+                seta.innerHTML = '<i class="fa-solid fa-chevron-down"></i>';
+            } else {
+                area.style.display = 'none';
+                seta.innerHTML = '<i class="fa-solid fa-chevron-right"></i>';
+            }
+        }
+
+        aplicarDeepLinkPeca();
+    </script>
+</body>
+</html>

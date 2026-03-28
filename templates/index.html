@@ -6,8 +6,11 @@
     <title>Moto Tracker</title>
 
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
-    <link rel="icon" type="image/png" href="{{ url_for('static', filename='icon.png') }}">
-    <link rel="apple-touch-icon" href="{{ url_for('static', filename='icon.png') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
+    <link rel="icon" type="image/png" sizes="96x96" href="{{ url_for('static', filename='favicon-96x96.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicon-16x16.png') }}">
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
     <meta name="theme-color" content="#121212">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -15,181 +18,194 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Teko:wght@500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
 </head>
 <body>
-
     <div class="container">
         <header class="topbar">
-            <div class="brand">
-                <h1>MOTO TRACKER</h1>
-                <p>Painel de gastos, autonomia e manutencao em um so lugar</p>
+            <div class="header-inner">
+                <div class="brand">
+                    <h1><img src="{{ url_for('static', filename='favicon-96x96.png') }}" alt="Moto Tracker" class="brand-logo"> MOTO TRACKER</h1>
+                    <p class="active-vehicle-info">
+                        <span class="active-dot" aria-hidden="true"></span>
+                        {{ veiculo_ativo.nome | default(veiculo_ativo.apelido, true) | default('Minha Moto', true) }}
+                        ({{ veiculo_ativo.ano | default(veiculo_ativo.ano_modelo, true) | default('N/A', true) }})
+                    </p>
+                    <p>Acompanhe seus gastos, autonomia e manutenção em um só lugar</p>
+                </div>
+                <nav class="topbar-nav" aria-label="Navegação principal">
+                    <a href="/" class="topbar-link {% if request.path == '/' %}active{% endif %}">Painel</a>
+                    <a href="/garagem" class="topbar-link {% if request.path == '/garagem' %}active{% endif %}">Oficina</a>
+                    <a href="/veiculos" class="topbar-link {% if request.path == '/veiculos' %}active{% endif %}">Veículos</a>
+                </nav>
+                <a href="/logout" class="logout-btn" title="Sair"><i class="fa-solid fa-right-from-bracket"></i></a>
             </div>
-            <a href="/logout" class="logout-btn" title="Sair">🚪</a>
         </header>
 
-        <div class="kpi-container">
-            <div class="kpi-card">
-                <h3>AUTONOMIA</h3>
-                <p>{{ kpi_media }} km/L</p>
-            </div>
-            <div class="kpi-card">
-                <h3>CUSTO/KM</h3>
-                <p>R$ {{ kpi_custo_km }}</p>
-            </div>
-            <div class="kpi-card">
-                <h3>TOTAL</h3>
-                <p>R$ {{ kpi_total }}</p>
-            </div>
-        </div>
-
-        <div class="health-section">
-            <h3>❤️ SAÚDE DAS PEÇAS</h3>
-            {% for peca in saude_pecas %}
-            <div class="health-item">
-                <div class="health-header">
-                    <strong>{{ peca.nome }}</strong>
-                    <span class="km-restante" style="color: {{ 'red' if peca.pct < 20 else '#ff9800' }};">
-                        {{ peca.km_restante | int }} km rest.
-                    </span>
-                </div>
-                <div class="progress-bar-bg">
-                    <div class="progress-bar-fill" style="width: {{ peca.pct }}%; background-color: {{ '#4caf50' if peca.pct > 20 else '#f44336' }};"></div>
-                </div>
-                <p class="subtext">Rodou {{ peca.km_rodado | int }} km.</p>
-            </div>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="pecas-flash-stack" aria-live="polite">
+            {% for category, message in messages %}
+            <div class="alert {{ 'alert-success' if category == 'success' else 'alert-error' }}">{{ message }}</div>
             {% endfor %}
-            {% if not saude_pecas %}
-            <p style="color: #666; font-style: italic; text-align: center; font-size: 0.8rem;">Nenhuma peça monitorada.</p>
-            {% endif %}
         </div>
+        {% endif %}
+        {% endwith %}
 
-        <div class="tabs">
-            <button class="tab-btn active" onclick="openTab(event, 'Gasolina')">⛽ Gasolina</button>
-            <button class="tab-btn" onclick="openTab(event, 'Oficina')">🔧 Oficina</button>
-            <button class="tab-btn" onclick="openTab(event, 'Config')">⚙️ Config</button>
-        </div>
-
-        <div id="Gasolina" class="tab-content active">
-            
-            <div class="smart-input-box">
-                <form action="/adicionar_rapido" method="POST">
-                    <h4 class="smart-title">⚡ Adicao Rapida</h4>
-                    <div class="smart-input-wrapper">
-                        <input type="text" name="smart_text" placeholder="Ex: 46.20  7.010  869" required autocomplete="off" inputmode="decimal">
-                        <button type="submit">OK</button>
-                    </div>
-                    <p class="hint">Ordem: Valor (espaço) Litros (espaço) KM (3 dígitos)</p>
-                </form>
+        <div class="kpi-container">
+            <div class="kpi-card glass">
+                <h3>AUTONOMIA</h3>
+                <p class="kpi-value neon-cyan">{{ kpi_media }} <span>km/L</span></p>
             </div>
+            <div class="kpi-card glass">
+                <h3>CUSTO/KM</h3>
+                <p class="kpi-value neon-orange">R$ {{ kpi_custo_km }}</p>
+            </div>
+            <div class="kpi-card glass">
+                <h3>TOTAL</h3>
+                <p class="kpi-value">R$ {{ kpi_total }}</p>
+            </div>
+        </div>
+
+        <div class="stats-row">
+            <div class="stat-card glass">
+                <div class="stat-icon stat-icon-road"><i class="fa-solid fa-road"></i></div>
+                <div>
+                    <h4>Rodado no Mês</h4>
+                    <p>{{ km_total_mes }} km</p>
+                </div>
+            </div>
+            <div class="stat-card glass">
+                <div class="stat-icon stat-icon-calendar"><i class="fa-solid fa-calendar-days"></i></div>
+                <div>
+                    <h4>Média Diária</h4>
+                    <p>{{ media_km_dia }} km/dia</p>
+                </div>
+            </div>
+        </div>
+
+        <section class="health-section glass">
+            <div class="header-pecas">
+                <h3><i class="fa-solid fa-heart-pulse"></i> Saúde das Peças</h3>
+            </div>
+            <div class="health-grid">
+                {% for peca in saude_pecas %}
+                {% set nome_lower = peca.nome_peca | lower %}
+                {% set classe_cor = 'vida-ok' if peca.porcentagem < 75 else ('vida-alerta' if peca.porcentagem <= 90 else 'vida-critica') %}
+                <a href="{{ url_for('detalhes_peca', nome_peca=peca.nome_peca) }}" class="health-link" title="Ver detalhes de {{ peca.nome_peca }}">
+                    <article class="health-item">
+                        <div class="health-header">
+                            <span class="peca-icon">
+                                {% if 'oleo' in nome_lower %}<i class="fa-solid fa-oil-can"></i>
+                                {% elif 'pneu' in nome_lower %}<i class="fa-solid fa-circle-notch"></i>
+                                {% elif 'relacao' in nome_lower %}<i class="fa-solid fa-link"></i>
+                                {% else %}<i class="fa-solid fa-gear"></i>{% endif %}
+                            </span>
+                            <div>
+                                <strong>{{ peca.nome_peca }}</strong>
+                                <p class="subtext">{{ peca.km_rodado }} / {{ peca.km_limite }} KM</p>
+                            </div>
+                        </div>
+                        <div class="vida-meta">
+                            <span class="vida-pct {{ classe_cor }}">{{ peca.porcentagem | int }}%</span>
+                            <span class="km-restante">Restam {{ peca.km_restante }} km</span>
+                        </div>
+                        <div class="progress-bar-bg">
+                            <div class="progress-bar-fill {{ classe_cor }}" style="width: {{ peca.porcentagem }}%;"></div>
+                        </div>
+                    </article>
+                </a>
+                {% else %}
+                <p class="empty-note">Nenhuma peça monitorada para o veículo ativo.</p>
+                {% endfor %}
+            </div>
+        </section>
+
+        <div class="dashboard-main">
+            <section class="smart-input-box glass">
+                <form id="quickFuelForm" action="/adicionar_rapido" method="POST">
+                    <div class="section-head">
+                        <h4 class="smart-title"><i class="fa-solid fa-bolt"></i> Adição Rápida</h4>
+                        <p id="quickHint" class="hint">Exemplo: 45.50 7.2 12890</p>
+                    </div>
+                    <div class="quick-grid">
+                        <label>
+                            Valor (R$)
+                            <input type="number" step="any" id="valorRapido" name="valor_rapido" placeholder="45.50" required autofocus inputmode="decimal">
+                        </label>
+                        <label>
+                            Litros (L)
+                            <input type="number" step="any" id="litrosRapido" name="litros_rapido" placeholder="7.2" required inputmode="decimal">
+                        </label>
+                        <label>
+                            KM Atual
+                            <input type="number" id="kmRapido" name="km_atual" placeholder="12890" required inputmode="numeric">
+                        </label>
+                        <input type="hidden" name="smart_text" id="smartText">
+                    </div>
+                    <button type="submit" class="quick-submit">OK</button>
+                </form>
+            </section>
 
             <button type="button" class="btn-toggle" onclick="toggleDisplay('areaGraficos', 'setaGrafico', 'grid')">
-                <span>📊 Gráficos</span>
-                <span id="setaGrafico">🔽</span>
+                <span><i class="fa-solid fa-chart-line"></i> Gráficos</span>
+                <span id="setaGrafico"><i class="fa-solid fa-chevron-down"></i></span>
             </button>
 
             <div id="areaGraficos" class="charts-container" style="display: grid;">
-                <div class="chart-card">
-                    <h3>📉 Km/L</h3>
+                <div class="chart-card glass">
+                    <h3><i class="fa-solid fa-wave-square"></i> Km/L</h3>
                     <canvas id="lineChart"></canvas>
                 </div>
-                <div class="chart-card">
-                    <h3>💰 Gastos</h3>
+                <div class="chart-card glass">
+                    <h3><i class="fa-solid fa-coins"></i> Gastos Mensais</h3>
                     <canvas id="barChart"></canvas>
                 </div>
             </div>
 
             <button type="button" class="btn-toggle" onclick="toggleDisplay('listaGasolina', 'setaHistGas', 'block')">
-                <span>⛽ Histórico de Abastecimentos</span>
-                <span id="setaHistGas">🔽</span>
+                <span><i class="fa-solid fa-clock-rotate-left"></i> Histórico de Abastecimentos</span>
+                <span id="setaHistGas"><i class="fa-solid fa-chevron-down"></i></span>
             </button>
 
             <div id="listaGasolina" class="list-container" style="display: block;">
                 {% for item in abastecimentos %}
-                <div class="list-item">
-                    <div class="item-info">
-                        <span class="km">KM {{ item.km | int }}</span>
-                        <span class="details">{{ item.litros }} L • R$ {{ item.preco_litro }}/L</span>
-                        {% if item.kml != "---" %}
-                        <span class="tag-kml">{{ item.kml }} km/L</span>
-                        {% endif %}
-                    </div>
-                    <div class="item-actions">
+                <div class="list-item fuel-slim-row">
+                    <div class="fuel-col-main">
+                        <span class="km"><i class="fa-solid fa-gas-pump"></i> KM {{ item.km | int }}</span>
                         <span class="data">{{ item.data }}</span>
+                    </div>
+
+                    <div class="fuel-col-values">
+                        <span class="fuel-value">{{ item.litros }} L</span>
+                        <span class="details">R$ {{ item.preco_litro }}/L</span>
+                    </div>
+
+                    <div class="fuel-col-performance">
+                        <span class="tag-kml {% if item.kml == '---' %}muted{% endif %}">{{ item.kml if item.kml != '---' else '--' }} km/L</span>
+                        <button type="button" class="tank-toggle" title="Marcar tanque cheio">
+                            <i class="ph ph-drop"></i>
+                            <span>Tanque cheio</span>
+                        </button>
+                    </div>
+
+                    <div class="fuel-col-actions">
                         <div class="btn-group">
-                            <a href="/editar/{{ item.id }}" class="btn-icon edit">✏️</a>
-                            <a href="/deletar/{{ item.id }}" class="btn-icon delete" onclick="return confirm('Apagar?')">🗑️</a>
+                            <button
+                                type="button"
+                                class="btn-icon edit edit-fuel-btn"
+                                title="Editar"
+                                data-id="{{ item.id }}"
+                                data-km="{{ item.km }}"
+                                data-litros="{{ item.litros }}"
+                                data-valor="{{ item.preco_total }}"
+                                data-data="{{ item.data_iso_edit }}"
+                            ><i class="ph ph-pencil-simple"></i></button>
+                            <a href="/deletar/{{ item.id }}" class="btn-icon delete" title="Excluir" onclick="return confirm('Apagar?')"><i class="ph ph-trash"></i></a>
                         </div>
                     </div>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-
-        <div id="Oficina" class="tab-content">
-            <div class="form-box">
-                <h3>Nova Manutenção</h3>
-                <form action="/adicionar_manutencao" method="POST">
-                    <input type="number" step="any" name="km" placeholder="KM Atual (Total)" required inputmode="decimal">
-                    <input type="text" name="servico" placeholder="Serviço (ex: Troca de Oleo)" required>
-                    <input type="number" step="any" name="valor" placeholder="Valor (R$)" required inputmode="decimal">
-                    <input type="text" name="obs" placeholder="Obs (Opcional)">
-                    <button type="submit" class="btn-add">Salvar</button>
-                </form>
-            </div>
-
-            <button type="button" class="btn-toggle" onclick="toggleDisplay('listaOficina', 'setaHistOficina', 'block')">
-                <span>🔧 Histórico de Oficina</span>
-                <span id="setaHistOficina">🔽</span>
-            </button>
-
-            <div id="listaOficina" class="list-container" style="display: block;">
-                {% for item in manutencoes %}
-                <div class="list-item oficina-item">
-                    <div class="item-info">
-                        <span class="servico">{{ item.servico }}</span>
-                        <div class="details-row">
-                            <span>KM {{ item.km | int }}</span>
-                            <span class="valor">R$ {{ item.valor }}</span>
-                        </div>
-                        {% if item.obs %}<p class="obs">{{ item.obs }}</p>{% endif %}
-                    </div>
-                    <div class="item-actions">
-                        <span class="data">{{ item.data }}</span>
-                        <div class="btn-group">
-                            <a href="/editar_manutencao/{{ item.id }}" class="btn-icon edit">✏️</a>
-                            <a href="/deletar_manutencao/{{ item.id }}" class="btn-icon delete" onclick="return confirm('Apagar?')">🗑️</a>
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-
-        <div id="Config" class="tab-content">
-            <div class="form-box config-box">
-                <h3>Monitorar Peça</h3>
-                <form action="/salvar_config" method="POST">
-                    <input type="text" name="nome" placeholder="Peça (ex: Oleo)" required>
-                    <input type="number" name="km" placeholder="Vida Útil (KM)" required inputmode="numeric">
-                    <button type="submit" class="btn-config">Adicionar</button>
-                </form>
-            </div>
-
-             <button type="button" class="btn-toggle" onclick="toggleDisplay('listaPecas', 'setaPecas', 'block')">
-                <span>⚙️ Peças Monitoradas</span>
-                <span id="setaPecas">🔽</span>
-            </button>
-
-            <div id="listaPecas" class="list-container" style="display: block;">
-                {% for item in configuracoes %}
-                <div class="list-item config-item">
-                    <div class="item-info">
-                        <span class="peca-nome">{{ item.nome }}</span>
-                        <span class="peca-vida">Meta: {{ item.km | int }} km</span>
-                    </div>
-                    <a href="/deletar_config/{{ item.id }}" class="btn-icon delete">🗑️</a>
                 </div>
                 {% endfor %}
             </div>
@@ -197,48 +213,100 @@
 
     </div>
 
+    <div id="editFuelModal" class="modal-backdrop" aria-hidden="true">
+        <div class="modal-card glass" role="dialog" aria-modal="true" aria-labelledby="editFuelModalTitle">
+            <h3 id="editFuelModalTitle" class="modal-title"><i class="ph ph-pencil-simple"></i> Editar Abastecimento</h3>
+            <form id="editFuelForm" method="POST" action="/editar/" class="modal-form">
+                <label>
+                    Odômetro (KM)
+                    <input type="number" step="any" id="modalKm" name="km" required inputmode="decimal">
+                </label>
+                <label>
+                    Litros (L)
+                    <input type="number" step="any" id="modalLitros" name="litros" required inputmode="decimal">
+                </label>
+                <label>
+                    Valor Total (R$)
+                    <input type="number" step="any" id="modalValor" name="valor" required inputmode="decimal">
+                </label>
+                <label>
+                    Data e Hora
+                    <input type="datetime-local" id="edit_data" name="data" required>
+                </label>
+                <div class="modal-actions">
+                    <button type="button" id="cancelEditModal" class="btn-cancelar">Cancelar</button>
+                    <button type="submit" class="btn-save">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <footer id="rodape">
-        <hr>
-        <p>&copy; 2026 - Desenvolvido por <a href="https://edubraga7.github.io" target="_blank">Eduardo Braga</a></p>
+        <div class="footer-inner">
+            <div class="footer-line footer-version">Moto Tracker v1.0.0</div>
+            <div class="footer-line footer-author-row">
+                <span>Desenvolvido por </span>
+                <a href="https://edubraga7.github.io" target="_blank" rel="noopener noreferrer" class="footer-author-link">Eduardo Braga</a>
+                <a href="https://github.com/EduBraga7" target="_blank" rel="noopener noreferrer" aria-label="GitHub" class="footer-social-link">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
+                    </svg>
+                </a>
+                <a href="https://www.linkedin.com/in/edubraga7" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" class="footer-social-link">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
+                        <rect x="2" y="9" width="4" height="12"/>
+                        <circle cx="4" cy="4" r="2"/>
+                    </svg>
+                </a>
+            </div>
+        </div>
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        // --- FUNÇÃO GENÉRICA DE ESCONDER/MOSTRAR ---
+        const quickExamples = [
+            'Exemplo: 45.50 7.2 12890',
+            'Exemplo: 50.00 8.0 12922',
+            'Exemplo: 61.40 9.1 13015'
+        ];
+        let quickExampleIndex = 0;
+        setInterval(() => {
+            quickExampleIndex = (quickExampleIndex + 1) % quickExamples.length;
+            document.getElementById('quickHint').textContent = quickExamples[quickExampleIndex];
+        }, 2600);
+
+        document.getElementById('quickFuelForm').addEventListener('submit', function (event) {
+            const valor = document.getElementById('valorRapido').value.trim();
+            const litros = document.getElementById('litrosRapido').value.trim();
+            const km = document.getElementById('kmRapido').value.trim();
+
+            if (!valor || !litros || !km) {
+                event.preventDefault();
+                return;
+            }
+
+            document.getElementById('smartText').value = `${valor} ${litros} ${km}`;
+        });
+
         function toggleDisplay(idArea, idSeta, displayType) {
             var area = document.getElementById(idArea);
             var seta = document.getElementById(idSeta);
-            
-            // Se estiver escondido (none) ou vazio -> Mostra
+
             if (area.style.display === "none" || area.style.display === "") {
-                area.style.display = displayType; // 'block' para lista, 'grid' para gráfico
-                seta.innerHTML = "🔽"; // Seta baixo
+                area.style.display = displayType;
+                seta.innerHTML = '<i class="fa-solid fa-chevron-down"></i>';
             } else {
-                area.style.display = "none"; // Esconde
-                seta.innerHTML = "◀️"; // Seta lado
+                area.style.display = "none";
+                seta.innerHTML = '<i class="fa-solid fa-chevron-right"></i>';
             }
         }
 
-        // --- ABAS ---
-        function openTab(evt, tabName) {
-            var i, tabcontent, tablinks;
-            tabcontent = document.getElementsByClassName("tab-content");
-            for (i = 0; i < tabcontent.length; i++) {
-                tabcontent[i].style.display = "none";
-                tabcontent[i].classList.remove("active");
-            }
-            tablinks = document.getElementsByClassName("tab-btn");
-            for (i = 0; i < tablinks.length; i++) {
-                tablinks[i].className = tablinks[i].className.replace(" active", "");
-            }
-            document.getElementById(tabName).style.display = "block";
-            document.getElementById(tabName).classList.add("active");
-            evt.currentTarget.className += " active";
-        }
-        document.getElementById("Gasolina").style.display = "block";
-
-        // --- GRÁFICOS ---
         const ctxLine = document.getElementById('lineChart').getContext('2d');
+        const lineGradient = ctxLine.createLinearGradient(0, 0, 0, 260);
+        lineGradient.addColorStop(0, 'rgba(58, 226, 242, 0.46)');
+        lineGradient.addColorStop(1, 'rgba(58, 226, 242, 0.02)');
+
         new Chart(ctxLine, {
             type: 'line',
             data: {
@@ -246,12 +314,14 @@
                 datasets: [{
                     label: 'Km/L',
                     data: {{ values_linha | safe }},
-                    borderColor: '#ff9800',
-                    backgroundColor: 'rgba(255, 152, 0, 0.2)',
-                    borderWidth: 2,
-                    tension: 0.3,
+                    borderColor: '#3ae2f2',
+                    backgroundColor: lineGradient,
+                    borderWidth: 3,
+                    tension: 0.34,
                     fill: true,
-                    pointRadius: 3
+                    pointRadius: 4,
+                    pointHoverRadius: 5,
+                    pointBackgroundColor: '#7ef4ff'
                 }]
             },
             options: {
@@ -259,33 +329,125 @@
                 maintainAspectRatio: false,
                 plugins: { legend: { display: false } },
                 scales: {
-                    y: { grid: { color: '#2d3a4f' }, ticks: { color: '#95a5c4' } },
-                    x: { grid: { color: '#2d3a4f' }, ticks: { color: '#95a5c4' } }
+                    y: { grid: { color: 'rgba(120,145,190,0.16)' }, ticks: { color: '#9eb3d6' } },
+                    x: { grid: { color: 'rgba(120,145,190,0.1)' }, ticks: { color: '#9eb3d6' } }
                 }
             }
         });
 
         const ctxBar = document.getElementById('barChart').getContext('2d');
+        const barGradient = ctxBar.createLinearGradient(0, 0, 0, 260);
+        barGradient.addColorStop(0, 'rgba(255, 145, 84, 0.92)');
+        barGradient.addColorStop(1, 'rgba(58, 226, 242, 0.5)');
+
         new Chart(ctxBar, {
             type: 'bar',
             data: {
                 labels: {{ labels_barra | safe }},
-                datasets: [{ label: 'R$', data: {{ values_barra | safe }}, backgroundColor: '#23c7c7' }]
+                datasets: [{ label: 'R$', data: {{ values_barra | safe }}, backgroundColor: barGradient, borderRadius: 8, borderSkipped: false }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: { legend: { display: false } },
                 scales: {
-                    y: { beginAtZero: true, grid: { color: '#2d3a4f' }, ticks: { color: '#95a5c4' } },
-                    x: { grid: { display: false }, ticks: { color: '#95a5c4' } }
+                    y: { beginAtZero: true, grid: { color: 'rgba(120,145,190,0.15)' }, ticks: { color: '#9eb3d6' } },
+                    x: { grid: { display: false }, ticks: { color: '#9eb3d6' } }
                 }
             }
         });
 
-        // --- CORREÇÃO PONTO/VÍRGULA ---
         document.querySelectorAll('input[type="number"], input[inputmode="decimal"]').forEach(input => {
             input.addEventListener('input', function() { this.value = this.value.replace(/,/g, '.'); });
+        });
+
+        document.querySelectorAll('.tank-toggle').forEach(button => {
+            button.addEventListener('click', function () {
+                this.classList.toggle('active');
+            });
+        });
+
+        const editFuelModal = document.getElementById('editFuelModal');
+        const editFuelForm = document.getElementById('editFuelForm');
+        const modalKm = document.getElementById('modalKm');
+        const modalLitros = document.getElementById('modalLitros');
+        const modalValor = document.getElementById('modalValor');
+        const editDataInput = document.getElementById('edit_data');
+        const cancelEditModal = document.getElementById('cancelEditModal');
+
+        function openEditFuelModal(button) {
+            const id = button.getAttribute('data-id');
+            const km = button.getAttribute('data-km');
+            const litros = button.getAttribute('data-litros');
+            const valor = button.getAttribute('data-valor');
+            const data = button.getAttribute('data-data');
+
+            if (!id) {
+                return;
+            }
+
+            editFuelForm.setAttribute('action', `/editar/${id}`);
+            modalKm.value = km || '';
+            modalLitros.value = litros || '';
+            modalValor.value = valor || '';
+            editDataInput.value = data || '';
+
+            editFuelModal.classList.add('active');
+            editFuelModal.setAttribute('aria-hidden', 'false');
+        }
+
+        function closeEditFuelModal() {
+            editFuelModal.classList.remove('active');
+            editFuelModal.setAttribute('aria-hidden', 'true');
+        }
+
+        document.querySelectorAll('.edit-fuel-btn').forEach(button => {
+            button.addEventListener('click', function () {
+                openEditFuelModal(this);
+            });
+        });
+
+        cancelEditModal.addEventListener('click', function () {
+            closeEditFuelModal();
+        });
+
+        editFuelModal.addEventListener('click', function (event) {
+            if (event.target === editFuelModal) {
+                closeEditFuelModal();
+            }
+        });
+
+        document.getElementById('btnTrocaOleo')?.addEventListener('click', async function() {
+            const veiculo_id = this.dataset.veiculoId;
+            if (!veiculo_id) {
+                alert('Veículo não identificado.');
+                return;
+            }
+
+            this.classList.add('loading');
+            this.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Salvando...';
+
+            try {
+                const response = await fetch('/registrar_troca_oleo', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        veiculo_id: veiculo_id
+                    })
+                });
+
+                const data = await response.json();
+                if (!data.sucesso) {
+                    throw new Error(data.mensagem || 'Falha ao registrar troca de óleo');
+                }
+                location.reload();
+            } catch (error) {
+                alert(error.message || 'Erro ao registrar troca de óleo.');
+                this.classList.remove('loading');
+                this.innerHTML = '<i class="fa-solid fa-check"></i> Realizei Troca';
+            }
         });
     </script>
 </body>

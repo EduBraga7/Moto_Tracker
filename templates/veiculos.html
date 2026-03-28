@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Veículos - Moto Tracker</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header class="topbar">
+            <div class="header-inner">
+                <div class="brand">
+                    <h1><img src="{{ url_for('static', filename='favicon-96x96.png') }}" alt="Moto Tracker" class="brand-logo"> MOTO TRACKER</h1>
+                    <p>Gerencie e altere o contexto do veículo ativo</p>
+                </div>
+                <nav class="topbar-nav" aria-label="Navegação principal">
+                    <a href="/" class="topbar-link {% if request.path == '/' %}active{% endif %}">Painel</a>
+                    <a href="/garagem" class="topbar-link {% if request.path == '/garagem' %}active{% endif %}">Oficina</a>
+                    <a href="/veiculos" class="topbar-link {% if request.path == '/veiculos' %}active{% endif %}">Veículos</a>
+                </nav>
+                <a href="/logout" class="logout-btn" title="Sair"><i class="fa-solid fa-right-from-bracket"></i></a>
+            </div>
+        </header>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="pecas-flash-stack" aria-live="polite">
+            {% for category, message in messages %}
+            <div class="alert {{ 'alert-success' if category == 'success' else 'alert-error' }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <section class="glass pecas-head">
+            <h1><i class="fa-solid fa-motorcycle"></i> Meus Veículos</h1>
+            <p>Clique em um card para torná-lo o veículo ativo e voltar ao painel.</p>
+        </section>
+
+        <div class="pecas-veiculos-grid">
+            {% for veiculo in veiculos %}
+            <article class="glass veiculo-card {% if veiculo_ativo and veiculo_ativo.id == veiculo.id %}active{% endif %}">
+                {% if veiculo_ativo and veiculo_ativo.id == veiculo.id %}
+                <span class="veiculo-ativo-badge"><i class="fa-solid fa-circle-check"></i> Ativo</span>
+                {% endif %}
+                <div class="veiculo-card-head">
+                    <h3><i class="fa-solid fa-motorcycle"></i> {{ veiculo.apelido | default('Minha Moto', true) }}</h3>
+                    <div class="veiculo-card-actions">
+                        <a href="{{ url_for('editar_veiculo', id=veiculo.id) }}" class="btn-icon edit" title="Editar veículo"><i class="fa-solid fa-pen"></i></a>
+                        <button type="button" class="btn-icon delete open-delete-modal" title="Excluir veículo" data-veiculo-id="{{ veiculo.id }}"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                </div>
+                <div class="veiculo-meta">
+                    <span class="veiculo-km-pill km-edit-trigger" data-veiculo-id="{{ veiculo.id }}" data-km-atual="{{ veiculo.km_atual | default(0, true) }}" style="cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s ease;" title="Clique para editar o KM">
+                        <i class="fa-solid fa-gauge-high"></i> 
+                        <span class="km-display">{{ veiculo.km_atual_fmt | default('0', true) }} KM</span>
+                    </span>
+                    <span>Marca: {{ veiculo.marca | default('Nao informado', true) }}</span>
+                    <span>Modelo: {{ veiculo.modelo | default('Nao informado', true) }}</span>
+                    <span>Ano: {{ veiculo.ano_modelo | default(veiculo.ano, true) | default('N/A', true) }}</span>
+                </div>
+                <div class="fipe-tag" aria-label="Valor FIPE do veículo">
+                    <span class="fipe-label">Valor FIPE</span>
+                    <strong>{{ veiculo.valor_fipe | default('N/A', true) }}</strong>
+                </div>
+                <div class="veiculo-kpis">
+                    <div class="veiculo-kpi">
+                        <span>Total Investido</span>
+                        <strong>{{ veiculo.total_investido_fmt | default('R$ 0,00', true) }}</strong>
+                    </div>
+                    <div class="veiculo-kpi">
+                        <span>Custo Médio/Mês</span>
+                        <strong>{{ veiculo.custo_medio_mes_fmt | default('R$ 0,00', true) }}</strong>
+                    </div>
+                </div>
+                <div class="veiculo-toolbar" aria-label="Ações do veículo">
+                    {% if veiculo_ativo and veiculo_ativo.id == veiculo.id %}
+                    <span class="toolbar-btn primary is-active" aria-current="true"><i class="fa-solid fa-circle-check"></i><span class="toolbar-label">Em uso</span></span>
+                    {% else %}
+                    <a href="{{ url_for('ativar_veiculo', veiculo_id=veiculo.id) }}" class="toolbar-btn primary" title="Ativar {{ veiculo.apelido | default(veiculo.modelo, true) }}"><i class="fa-solid fa-crosshairs"></i><span class="toolbar-label">Ativar</span></a>
+                    {% endif %}
+                    <div class="toolbar-export-group">
+                        <a href="{{ url_for('exportar_excel_rota', veiculo_id=veiculo.id) }}" class="toolbar-btn export" title="Exportar Excel"><i class="fa-solid fa-file-excel"></i><span class="toolbar-label">Excel</span></a>
+                        <a href="{{ url_for('exportar_pdf_rota', veiculo_id=veiculo.id) }}" class="toolbar-btn export" title="Exportar PDF"><i class="fa-solid fa-file-pdf"></i><span class="toolbar-label">PDF</span></a>
+                    </div>
+                </div>
+            </article>
+            {% else %}
+            <article class="glass veiculo-card">
+                <div class="veiculo-card-head">
+                    <h3><i class="fa-solid fa-motorcycle"></i> Nenhum veículo cadastrado</h3>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+
+        <button type="button" id="toggleNovoVeiculo" class="quick-submit novo-veiculo-btn">{% if veiculo_editando %}Editar Veículo{% else %}+ Cadastrar Novo Veículo{% endif %}</button>
+
+        <div id="novoVeiculoFormBox" class="form-box glass {% if not veiculo_editando %}hidden{% endif %}">
+            <h3>{% if veiculo_editando %}Editar Ativo{% else %}Cadastrar Veículo{% endif %}</h3>
+            <form
+                id="novoVeiculoForm"
+                action="{% if veiculo_editando %}{{ url_for('editar_veiculo', id=veiculo_editando.id) }}{% else %}/cadastrar_veiculo{% endif %}"
+                method="POST"
+                data-create-action="/cadastrar_veiculo"
+                data-edit-marca="{{ veiculo_editando.marca if veiculo_editando else '' }}"
+                data-edit-modelo="{{ veiculo_editando.modelo if veiculo_editando else '' }}"
+                data-edit-ano="{{ veiculo_editando.ano_modelo | default(veiculo_editando.ano, true) if veiculo_editando else '' }}"
+                data-edit-fipe="{{ veiculo_editando.fipe_codigo if veiculo_editando else '' }}"
+                data-edit-km="{{ veiculo_editando.km_atual | default(0, true) if veiculo_editando else '' }}"
+                novalidate
+            >
+                <label for="apelidoInput">Apelido do Veículo <span class="required-asterisk">*</span></label>
+                <input type="text" id="apelidoInput" name="apelido" placeholder="Ex: Minha Bros 150" value="{{ veiculo_editando.apelido if veiculo_editando else '' }}" required>
+                
+                <label for="kmInput">KM Atual <span class="required-asterisk">*</span></label>
+                <input type="number" id="kmInput" name="km_atual" min="0" step="1" placeholder="Ex: 890" value="{{ veiculo_editando.km_atual | default('', true) if veiculo_editando else '' }}" required inputmode="numeric">
+                
+                <label for="marcaInput">Marca <span class="required-asterisk">*</span></label>
+                <input type="text" id="marcaInput" name="marca" placeholder="Ex: HONDA" list="marcas-datalist" autocomplete="off" required>
+                <datalist id="marcas-datalist"></datalist>
+                
+                <label for="modeloInput">Modelo <span class="required-asterisk">*</span></label>
+                <input type="text" id="modeloInput" name="modelo" placeholder="Ex: CB 500" list="modelos-datalist" autocomplete="off" required disabled>
+                <datalist id="modelos-datalist"></datalist>
+                
+                <label for="anoInput">Ano do Modelo <span class="required-asterisk">*</span></label>
+                <input type="number" id="anoInput" name="ano" placeholder="Ex: 2022" min="1970" max="2027" required>
+                <input type="hidden" id="fipeCodigoInput" name="fipe_codigo" value="{{ veiculo_editando.fipe_codigo if veiculo_editando else '' }}">
+                <small class="fipe-help-link">
+                    <a href="https://veiculos.fipe.org.br" target="_blank" rel="noopener noreferrer">Consultar código FIPE</a>
+                </small>
+                <small id="fipeSelectionStatus" class="fipe-help-link" style="display: none;">Código FIPE selecionado automaticamente.</small>
+                <div class="modal-actions">
+                    <button type="button" id="cancelNovoVeiculo" class="btn-cancelar">Cancelar</button>
+                    <button type="submit" id="submitNovoVeiculo" class="btn-save btn-save-ativo" disabled title="Preencha todos os campos obrigatórios para salvar">{% if veiculo_editando %}Salvar Alterações{% else %}Salvar Ativo{% endif %}</button>
+                    <span id="submitError" class="submit-error" style="display: none; color: #e74c3c; font-size: 0.85rem; margin-top: 0.5rem;"><i class="fa-solid fa-circle-xmark"></i> Preencha todos os campos obrigatórios</span>
+                </div>
+            </form>
+        </div>
+
+        <form id="deleteVehicleForm" method="POST" action=""></form>
+
+        <div id="deleteVehicleModal" class="modal-backdrop" aria-hidden="true">
+            <div class="modal-card glass vehicle-delete-card" role="dialog" aria-modal="true" aria-labelledby="deleteVehicleTitle">
+                <div class="delete-warning-icon" aria-hidden="true"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                <h3 id="deleteVehicleTitle" class="modal-title vehicle-delete-title">Excluir Veículo?</h3>
+                <p class="vehicle-delete-text">Essa ação é irreversível e apagará TODOS os dados de abastecimento e manutenção vinculados a este veículo.</p>
+                <div class="modal-actions">
+                    <button type="button" id="cancelDeleteVehicle" class="btn-cancelar">Cancelar</button>
+                    <button type="button" id="confirmDeleteVehicle" class="btn-save btn-delete-confirm">Sim, Excluir</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const toggleNovoVeiculo = document.getElementById('toggleNovoVeiculo');
+        const novoVeiculoFormBox = document.getElementById('novoVeiculoFormBox');
+        const cancelNovoVeiculo = document.getElementById('cancelNovoVeiculo');
+        const deleteVehicleModal = document.getElementById('deleteVehicleModal');
+        const cancelDeleteVehicle = document.getElementById('cancelDeleteVehicle');
+        const confirmDeleteVehicle = document.getElementById('confirmDeleteVehicle');
+        const deleteVehicleForm = document.getElementById('deleteVehicleForm');
+        const novoVeiculoForm = document.getElementById('novoVeiculoForm');
+        const novoVeiculoTitulo = document.querySelector('#novoVeiculoFormBox h3');
+        const submitNovoVeiculo = document.getElementById('submitNovoVeiculo');
+        const submitError = document.getElementById('submitError');
+        const apelidoInput = document.getElementById('apelidoInput');
+        const kmInput = document.getElementById('kmInput');
+        const marcaInput = document.getElementById('marcaInput');
+        const modeloInput = document.getElementById('modeloInput');
+        const anoInput = document.getElementById('anoInput');
+        const marcasDatalist = document.getElementById('marcas-datalist');
+        const modelosDatalist = document.getElementById('modelos-datalist');
+        const fipeCodigoInput = document.getElementById('fipeCodigoInput');
+        const fipeSelectionStatus = document.getElementById('fipeSelectionStatus');
+        let pendingDeleteVehicleId = null;
+        const BRASIL_API_BASE = 'https://brasilapi.com.br/api/fipe';
+        const ACAO_CADASTRO = novoVeiculoForm.dataset.createAction || '/cadastrar_veiculo';
+        const MODO_EDICAO_INICIAL = novoVeiculoForm.getAttribute('action').includes('/editar_veiculo/');
+
+        function limparSelecoesDependentes() {
+            preencherDatalist(modelosDatalist, []);
+            modeloInput.value = '';
+            anoInput.value = '';
+            modeloInput.disabled = true;
+            fipeCodigoInput.value = '';
+            fipeSelectionStatus.style.display = 'none';
+        }
+
+        function restaurarModoCadastro() {
+            novoVeiculoForm.setAttribute('action', ACAO_CADASTRO);
+            novoVeiculoTitulo.textContent = 'Cadastrar Veículo';
+            toggleNovoVeiculo.textContent = '+ Cadastrar Novo Veículo';
+            submitNovoVeiculo.textContent = 'Salvar Ativo';
+
+            // Limpa todos os campos para evitar reaproveitar dados da edicao anterior.
+            novoVeiculoForm.reset();
+            limparSelecoesDependentes();
+            carregarMarcas();
+            novoVeiculoFormBox.classList.add('hidden');
+            validarFormulario();
+        }
+
+        function validarFormulario() {
+            const apelidoValido = apelidoInput.value.trim().length > 0;
+            const kmValido = kmInput.value.trim().length > 0 && parseInt(kmInput.value, 10) >= 0;
+            const marcaValida = marcaInput.value.trim().length > 0;
+            const modeloValido = modeloInput.value.trim().length > 0;
+            const anoValido = anoInput.value.trim().length > 0;
+
+            const todosValidos = apelidoValido && kmValido && marcaValida && modeloValido && anoValido;
+
+            submitNovoVeiculo.disabled = !todosValidos;
+            if (todosValidos) {
+                submitError.style.display = 'none';
+                submitNovoVeiculo.title = '';
+            } else {
+                submitError.style.display = 'block';
+                submitNovoVeiculo.title = 'Preencha todos os campos obrigatórios para salvar';
+            }
+        }
+
+        function preencherDatalist(datalist, options, placeholder) {
+            datalist.innerHTML = '';
+            options.forEach((opt) => {
+                const option = document.createElement('option');
+                option.value = String(opt.value ?? '');
+                option.textContent = String(opt.label ?? '');
+                if (opt.fipe) {
+                    option.dataset.fipe = String(opt.fipe);
+                }
+                datalist.appendChild(option);
+            });
+        }
+
+        async function carregarMarcas() {
+            try {
+                const resp = await fetch(`${BRASIL_API_BASE}/marcas/v1/motos`);
+                const marcas = await resp.json();
+
+                const opcoes = (Array.isArray(marcas) ? marcas : []).map((item) => ({
+                    value: item.valor ?? item.codigo ?? item.id ?? '',
+                    label: item.nome ?? item.marca ?? 'Marca',
+                })).filter((item) => item.value && item.label);
+
+                preencherDatalist(marcasDatalist, opcoes);
+                marcaInput.disabled = false;
+            } catch (error) {
+                preencherDatalist(marcasDatalist, []);
+                marcaInput.disabled = true;
+            }
+        }
+
+        async function carregarModelos(codigoMarca) {
+            preencherDatalist(modelosDatalist, []);
+            modeloInput.value = '';
+            anoInput.value = '';
+            modeloInput.disabled = true;
+            fipeCodigoInput.value = '';
+            fipeSelectionStatus.style.display = 'none';
+
+            if (!codigoMarca) {
+                return;
+            }
+
+            try {
+                const resp = await fetch(`${BRASIL_API_BASE}/veiculos/v1/motos/${codigoMarca}`);
+                const veiculos = await resp.json();
+
+                const modelosUnicos = new Map();
+                (Array.isArray(veiculos) ? veiculos : []).forEach((item) => {
+                    const modeloNome = (item.modelo ?? item.nomeModelo ?? item.nome ?? '').trim();
+                    if (!modeloNome) {
+                        return;
+                    }
+                    if (!modelosUnicos.has(modeloNome)) {
+                        modelosUnicos.set(modeloNome, { value: modeloNome, label: modeloNome });
+                    }
+                });
+
+                preencherDatalist(modelosDatalist, Array.from(modelosUnicos.values()));
+                modeloInput.disabled = modelosUnicos.size === 0;
+            } catch (error) {
+                preencherDatalist(modelosDatalist, []);
+                modeloInput.disabled = true;
+            }
+        }
+
+        // Armazenar anos disponíveis para validação
+        let anosDisponiveisComFipe = [];
+
+        async function carregarAnos(codigoMarca, modeloSelecionado) {
+            anoInput.value = '';
+            anosDisponiveisComFipe = [];
+            fipeCodigoInput.value = '';
+            fipeSelectionStatus.style.display = 'none';
+
+            if (!codigoMarca || !modeloSelecionado) {
+                return;
+            }
+
+            try {
+                const resp = await fetch(`${BRASIL_API_BASE}/veiculos/v1/motos/${codigoMarca}`);
+                const veiculos = await resp.json();
+
+                const anos = [];
+                (Array.isArray(veiculos) ? veiculos : []).forEach((item) => {
+                    const modeloNome = (item.modelo ?? item.nomeModelo ?? item.nome ?? '').trim();
+                    if (modeloNome !== modeloSelecionado) {
+                        return;
+                    }
+                    const ano = item.anoModelo ?? item.ano ?? '';
+                    const fipe = item.valor ?? item.codigoFipe ?? item.codigo ?? '';
+                    if (!ano || !fipe) {
+                        return;
+                    }
+                    anos.push({ ano: String(ano), fipe: String(fipe) });
+                });
+
+                anosDisponiveisComFipe = anos;
+            } catch (error) {
+                anosDisponiveisComFipe = [];
+            }
+        }
+
+        function encontrarOpcaoPorTexto(datalist, texto) {
+            if (!texto) {
+                return null;
+            }
+            const alvo = texto.toLowerCase().trim();
+            for (const option of Array.from(datalist.options)) {
+                if (option.textContent.toLowerCase().trim() === alvo) {
+                    return option.value;
+                }
+            }
+            return null;
+        }
+
+        async function aplicarEdicaoInicial() {
+            const editMarca = (novoVeiculoForm.dataset.editMarca || '').trim();
+            const editModelo = (novoVeiculoForm.dataset.editModelo || '').trim();
+            const editAno = String((novoVeiculoForm.dataset.editAno || '').trim());
+            const editFipe = (novoVeiculoForm.dataset.editFipe || '').trim();
+
+            if (!editMarca) {
+                return;
+            }
+
+            marcaInput.value = editMarca;
+            const marcaCodigo = encontrarOpcaoPorTexto(marcasDatalist, editMarca);
+            if (marcaCodigo) {
+                await carregarModelos(marcaCodigo);
+            }
+
+            if (editModelo) {
+                modeloInput.value = editModelo;
+                await carregarAnos(marcaCodigo, editModelo);
+            }
+
+            if (editAno) {
+                anoInput.value = editAno;
+                const anoComFipe = anosDisponiveisComFipe.find(item => String(item.ano) === String(editAno));
+                const fipeSelecionado = anoComFipe ? anoComFipe.fipe : editFipe;
+                fipeCodigoInput.value = fipeSelecionado;
+                if (fipeCodigoInput.value) {
+                    fipeSelectionStatus.style.display = 'block';
+                }
+            }
+        }
+
+        toggleNovoVeiculo.addEventListener('click', function () {
+            if (toggleNovoVeiculo.textContent.includes('+ Cadastrar Novo Veículo')) {
+                novoVeiculoForm.setAttribute('action', ACAO_CADASTRO);
+                novoVeiculoTitulo.textContent = 'Cadastrar Veículo';
+                submitNovoVeiculo.textContent = 'Salvar Ativo';
+            }
+            novoVeiculoFormBox.classList.toggle('hidden');
+        });
+
+        cancelNovoVeiculo.addEventListener('click', function () {
+            restaurarModoCadastro();
+        });
+
+        document.querySelectorAll('.open-delete-modal').forEach((button) => {
+            button.addEventListener('click', function () {
+                pendingDeleteVehicleId = this.getAttribute('data-veiculo-id');
+                if (!pendingDeleteVehicleId) {
+                    return;
+                }
+                deleteVehicleModal.classList.add('active');
+                deleteVehicleModal.setAttribute('aria-hidden', 'false');
+            });
+        });
+
+        cancelDeleteVehicle.addEventListener('click', function () {
+            deleteVehicleModal.classList.remove('active');
+            deleteVehicleModal.setAttribute('aria-hidden', 'true');
+            pendingDeleteVehicleId = null;
+        });
+
+        confirmDeleteVehicle.addEventListener('click', function () {
+            if (!pendingDeleteVehicleId) {
+                return;
+            }
+            deleteVehicleForm.setAttribute('action', `/deletar_veiculo/${pendingDeleteVehicleId}`);
+            deleteVehicleForm.submit();
+        });
+
+        deleteVehicleModal.addEventListener('click', function (event) {
+            if (event.target === deleteVehicleModal) {
+                deleteVehicleModal.classList.remove('active');
+                deleteVehicleModal.setAttribute('aria-hidden', 'true');
+                pendingDeleteVehicleId = null;
+            }
+        });
+
+        apelidoInput.addEventListener('input', function () {
+            validarFormulario();
+        });
+
+        kmInput.addEventListener('input', function () {
+            validarFormulario();
+        });
+
+        marcaInput.addEventListener('input', async function () {
+            const marcaTexto = this.value.trim();
+            if (marcaTexto.length === 0) {
+                modeloInput.value = '';
+                modeloInput.disabled = true;
+                anoInput.value = '';
+                preencherDatalist(modelosDatalist, []);
+            } else {
+                // Procurar o código da marca pelo texto
+                const marcaCodigo = encontrarOpcaoPorTexto(marcasDatalist, marcaTexto);
+                if (marcaCodigo) {
+                    await carregarModelos(marcaCodigo);
+                }
+            }
+            validarFormulario();
+        });
+
+        modeloInput.addEventListener('input', async function () {
+            const modeloTexto = this.value.trim();
+            const marcaTexto = marcaInput.value.trim();
+            const marcaCodigo = encontrarOpcaoPorTexto(marcasDatalist, marcaTexto);
+            
+            if (modeloTexto.length === 0 || !marcaCodigo) {
+                anoInput.value = '';
+            } else {
+                await carregarAnos(marcaCodigo, modeloTexto);
+            }
+            validarFormulario();
+        });
+
+        anoInput.addEventListener('change', function () {
+            const anoValor = this.value.trim();
+            if (anoValor.length > 0) {
+                const anoComFipe = anosDisponiveisComFipe.find(item => String(item.ano) === String(anoValor));
+                const fipeSelecionado = anoComFipe ? anoComFipe.fipe : '';
+                fipeCodigoInput.value = fipeSelecionado;
+                fipeSelectionStatus.style.display = fipeSelecionado ? 'block' : 'none';
+            } else {
+                fipeCodigoInput.value = '';
+                fipeSelectionStatus.style.display = 'none';
+            }
+            validarFormulario();
+        });
+
+        novoVeiculoForm.addEventListener('submit', function (event) {
+            if (!fipeCodigoInput.value) {
+                event.preventDefault();
+                alert('Selecione Marca, Modelo e Ano para gerar o código FIPE automaticamente.');
+                return;
+            }
+            if (submitNovoVeiculo.disabled) {
+                event.preventDefault();
+                validarFormulario();
+            }
+        });
+
+        (async function initFipeSelects() {
+            await carregarMarcas();
+            await aplicarEdicaoInicial();
+
+            if (!MODO_EDICAO_INICIAL) {
+                novoVeiculoTitulo.textContent = 'Cadastrar Veículo';
+                toggleNovoVeiculo.textContent = '+ Cadastrar Novo Veículo';
+                submitNovoVeiculo.textContent = 'Salvar Ativo';
+                novoVeiculoForm.setAttribute('action', ACAO_CADASTRO);
+            }
+            validarFormulario();
+        })();
+
+        // ============ EDIÇÃO RÁPIDA DE KM VIA AJAX ============
+        document.querySelectorAll('.km-edit-trigger').forEach(badge => {
+            badge.addEventListener('click', function(event) {
+                event.stopPropagation();
+                const veiculo_id = this.dataset.veiculoId;
+                const km_atual = this.dataset.kmAtual || '0';
+                const kmDisplay = this.querySelector('.km-display');
+                
+                if (!kmDisplay) return;
+                
+                // Salvar estado original
+                const originalHTML = this.innerHTML;
+                const originalBgColor = this.style.backgroundColor;
+                
+                // Criar container com classe CSS
+                const container = document.createElement('div');
+                container.className = 'km-edit-container';
+                
+                // Criar input de edição com classe CSS
+                const input = document.createElement('input');
+                input.type = 'number';
+                input.className = 'km-edit-input';
+                input.value = km_atual;
+                input.min = '0';
+                input.placeholder = 'KM';
+                
+                // Criar botão de confirmação com classe CSS
+                const btnConfirm = document.createElement('button');
+                btnConfirm.type = 'button';
+                btnConfirm.className = 'km-edit-btn-confirm';
+                btnConfirm.title = 'Confirmar (Enter)';
+                btnConfirm.innerHTML = '<i class="fa-solid fa-check"></i>';
+                
+                // Criar botão de cancelamento com classe CSS
+                const btnCancel = document.createElement('button');
+                btnCancel.type = 'button';
+                btnCancel.className = 'km-edit-btn-cancel';
+                btnCancel.title = 'Cancelar (Esc)';
+                btnCancel.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+                
+                // Função para cancelar edição
+                const cancelEdit = () => {
+                    this.innerHTML = originalHTML;
+                    this.style.backgroundColor = originalBgColor;
+                };
+                
+                // Função para confirmar edição
+                const confirmarEdicao = async () => {
+                    const novoKm = input.value.trim();
+                    
+                    if (!novoKm || isNaN(parseInt(novoKm))) {
+                        alert('Por favor, digite um valor válido para KM');
+                        input.focus();
+                        return;
+                    }
+                    
+                    const novoKmInt = parseInt(novoKm);
+                    if (novoKmInt < 0) {
+                        alert('KM não pode ser negativo');
+                        input.focus();
+                        return;
+                    }
+                    
+                    // Desabilitar botões e mostrar loading
+                    input.disabled = true;
+                    btnConfirm.disabled = true;
+                    btnCancel.disabled = true;
+                    btnConfirm.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+                    
+                    try {
+                        const response = await fetch('/atualizar_km_rapido', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                veiculo_id: veiculo_id,
+                                novo_km: novoKm
+                            })
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (data.sucesso) {
+                            // Atualizar badge com novo valor
+                            this.innerHTML = `
+                                <i class="fa-solid fa-gauge-high"></i>
+                                <span class="km-display">${data.novo_km_formatado} KM</span>
+                            `;
+                            this.style.backgroundColor = 'rgba(77, 219, 143, 0.2)';
+                            
+                            // Restaurar cor original após 2 segundos
+                            setTimeout(() => {
+                                this.style.backgroundColor = originalBgColor;
+                            }, 2000);
+                        } else {
+                            alert(`Erro: ${data.mensagem || 'Falha ao atualizar KM'}`);
+                            cancelEdit();
+                        }
+                    } catch (error) {
+                        console.error('Erro na requisição:', error);
+                        alert('Erro ao atualizar KM. Tente novamente.');
+                        cancelEdit();
+                    }
+                };
+                
+                // Montar container
+                container.appendChild(input);
+                container.appendChild(btnConfirm);
+                container.appendChild(btnCancel);
+                
+                // Substituir conteúdo do badge
+                this.innerHTML = '';
+                this.appendChild(container);
+                
+                // Adicionar listeners aos botões
+                btnConfirm.addEventListener('click', confirmarEdicao);
+                btnCancel.addEventListener('click', cancelEdit);
+                
+                // Enter para confirmar, Escape para cancelar
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') confirmarEdicao();
+                    if (e.key === 'Escape') cancelEdit();
+                });
+                
+                // Focus no input
+                input.focus();
+                input.select();
+            });
+        });
+    </script>
+</body>
+</html>
