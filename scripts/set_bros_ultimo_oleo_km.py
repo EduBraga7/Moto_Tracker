@@ -5,7 +5,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from app import _normalizar_texto, db
+from backend.app import _normalizar_texto, db
 
 TARGET_KM = 64913
 

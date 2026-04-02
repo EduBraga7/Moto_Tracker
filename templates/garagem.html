@@ -1,99 +1,46 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Oficina - Moto Tracker</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-</head>
-<body>
-    <div class="container">
-        <header class="topbar">
-            <div class="header-inner">
-                <div class="brand">
-                    <h1><img src="{{ url_for('static', filename='favicon-96x96.png') }}" alt="Moto Tracker" class="brand-logo"> MOTO TRACKER</h1>
-                    <p>Command Center da Oficina</p>
-                </div>
-                <nav class="topbar-nav" aria-label="Navegação principal">
-                    <a href="/" class="topbar-link {% if request.path == '/' %}active{% endif %}">Painel</a>
-                    <a href="/garagem" class="topbar-link {% if request.path == '/garagem' or request.path == '/oficina' %}active{% endif %}">Oficina</a>
-                    <a href="/veiculos" class="topbar-link {% if request.path == '/veiculos' %}active{% endif %}">Veículos</a>
-                </nav>
-                <a href="/logout" class="logout-btn" title="Sair"><i class="fa-solid fa-right-from-bracket"></i></a>
-            </div>
-        </header>
+{% extends 'base.html' %}
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-        <div class="pecas-flash-stack" aria-live="polite">
-            {% for category, message in messages %}
-            <div class="alert {{ 'alert-success' if category == 'success' else 'alert-error' }}">{{ message }}</div>
-            {% endfor %}
-        </div>
-        {% endif %}
-        {% endwith %}
+{% block title %}Oficina - Moto Tracker{% endblock %}
+
+{% block page_heading %}Command Center da Oficina{% endblock %}
+
+{% block content %}
 
         <section class="oficina-command-grid">
             <article class="glass oficina-health-panel">
                 <div class="header-pecas">
                     <h3><i class="fa-solid fa-heart-pulse"></i> Saúde das Peças</h3>
                 </div>
-                <div class="health-grid oficina-health-grid">
-                    {% for peca in pecas_dinamicas %}
-                    {% set nome_lower = peca.nome_peca | lower %}
-                    {% set classe_cor = 'vida-ok' if peca.porcentagem < 75 else ('vida-alerta' if peca.porcentagem <= 90 else 'vida-critica') %}
-                    <a href="{{ url_for('detalhes_peca', nome_peca=peca.nome_peca) }}" class="health-link" title="Ver detalhes de {{ peca.nome_peca }}">
-                        <article class="health-item oficina-health-item" data-peca="{{ peca.nome_peca }}">
-                            <div class="health-header">
-                                <span class="peca-icon">
-                                    {% if 'oleo' in nome_lower %}<i class="fa-solid fa-oil-can"></i>
-                                    {% elif 'pneu' in nome_lower %}<i class="fa-solid fa-circle-notch"></i>
-                                    {% elif 'relacao' in nome_lower %}<i class="fa-solid fa-link"></i>
-                                    {% else %}<i class="fa-solid fa-gear"></i>{% endif %}
-                                </span>
-                                <div>
-                                    <strong>{{ peca.nome_peca }}</strong>
-                                    <p class="subtext">{{ peca.km_rodado }} / {{ peca.km_rodado + peca.km_restante }} KM</p>
-                                </div>
-                            </div>
-                            <div class="vida-meta">
-                                <span class="vida-pct {{ classe_cor }}">{{ peca.porcentagem | int }}%</span>
-                                <span class="km-restante">Restam {{ peca.km_restante }} km</span>
-                            </div>
-                            <div class="progress-bar-bg">
-                                <div class="progress-bar-fill {{ classe_cor }}" style="width: {{ peca.porcentagem }}%;"></div>
-                            </div>
-                        </article>
-                    </a>
-                    {% else %}
-                    <div class="oficina-empty-health">
-                        <i class="fa-regular fa-circle-dot"></i>
-                        <p>Sem dados de desgaste para o veículo ativo.</p>
-                    </div>
-                    {% endfor %}
-                </div>
+                <div class="health-grid oficina-health-grid" id="pecasRastreadasGrid"></div>
             </article>
 
-            <article class="glass oficina-action-panel">
-                <h3><i class="fa-solid fa-screwdriver-wrench"></i> Nova Manutenção</h3>
-                <form action="/adicionar_manutencao" method="POST">
-                    <select name="peca" id="pecaSelect" required>
-                        <option value="">Selecione a peça</option>
-                        <option value="Óleo">Óleo</option>
-                        <option value="Relação">Relação</option>
-                        <option value="Pneu">Pneu</option>
-                    </select>
-                    <input type="number" step="any" name="km" id="kmInputManutencao" placeholder="KM Atual (Total)" required inputmode="decimal">
-                    <input type="number" step="any" name="valor" placeholder="Valor (R$)" required inputmode="decimal">
-                    <input type="datetime-local" name="data" required>
-                    <input type="text" name="obs" placeholder="Obs (Opcional)">
-                    <button type="submit" class="btn-add oficina-submit">Registrar Troca</button>
-                </form>
-            </article>
+            <div class="oficina-side-stack">
+                <article class="glass oficina-action-panel">
+                    <h3><i class="fa-solid fa-screwdriver-wrench"></i> Nova Manutenção</h3>
+                    <form action="/adicionar_manutencao" method="POST" id="novaManutencaoForm">
+                        <select id="pecaSelect" required>
+                            <option value="">Selecione a peça</option>
+                            <option value="__nova__">Outra peça (digitar abaixo)</option>
+                        </select>
+                        <input type="text" id="pecaCustomInput" placeholder="Ou digite uma nova peça (opcional)">
+                        <input type="hidden" name="peca" id="pecaFinalInput" required>
+                        <input type="number" step="any" name="km" id="kmInputManutencao" placeholder="KM Atual (Total)" required inputmode="decimal">
+                        <input type="number" step="any" name="valor" placeholder="Valor (R$)" required inputmode="decimal">
+                        <input type="datetime-local" name="data" required>
+                        <input type="text" name="obs" placeholder="Obs (Opcional)">
+                        <button type="submit" class="btn-add oficina-submit">Registrar Troca</button>
+                    </form>
+                </article>
+
+                <article class="glass oficina-action-panel nova-peca-panel">
+                    <h3><i class="fa-solid fa-circle-plus"></i> Adicionar Nova Peça</h3>
+                    <form action="/salvar_peca_rastreada" method="POST" class="nova-peca-form">
+                        <input type="text" name="nome_peca" placeholder="Nome da Peça (ex: Filtro de Ar)" required>
+                        <input type="number" name="intervalo_troca" min="1" step="1" placeholder="Intervalo de Troca em KM (ex: 5000)" required inputmode="numeric">
+                        <button type="submit" class="btn-add oficina-submit nova-peca-save">Salvar Peça</button>
+                    </form>
+                </article>
+            </div>
         </section>
 
         <button type="button" class="btn-toggle" onclick="toggleDisplay('listaOficina', 'setaOficina', 'block')">
@@ -129,15 +76,146 @@
             </div>
             {% endfor %}
         </div>
-    </div>
+{% endblock %}
 
+{% block scripts %}
     <script>
+        const pecasRastreadas = {{ pecas_rastreadas | tojson | safe }};
+        const hodometroTotalAtual = Number({{ hodometro_total_atual | default(0) | int }});
+        const veiculoAtivoId = {{ (veiculo_ativo.id if veiculo_ativo else '') | tojson }};
+
         function normalizarTexto(value) {
             return (value || '')
                 .normalize('NFD')
                 .replace(/[\u0300-\u036f]/g, '')
                 .toLowerCase()
                 .trim();
+        }
+
+        function escapeHtml(value) {
+            return String(value || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function iconePeca(nomePeca) {
+            const nomeNorm = normalizarTexto(nomePeca);
+            if (nomeNorm.includes('oleo')) {
+                return 'fa-solid fa-oil-can';
+            }
+            if (nomeNorm.includes('pneu')) {
+                return 'fa-solid fa-circle-notch';
+            }
+            if (nomeNorm.includes('relacao') || nomeNorm.includes('corrente')) {
+                return 'fa-solid fa-link';
+            }
+            return 'fa-solid fa-gear';
+        }
+
+        function calcularSaudePeca(peca) {
+            const intervaloTroca = Math.max(1, Number(peca.intervalo_troca || 0));
+            const kmUltimaTroca = Math.max(0, Number(peca.km_ultima_troca || 0));
+            const kmPercorridoComAPeca = Math.max(0, hodometroTotalAtual - kmUltimaTroca);
+            const kmRestante = Math.max(0, intervaloTroca - kmPercorridoComAPeca);
+            const porcentagemVidaUtil = Math.max(0, Math.min(100, (kmRestante / intervaloTroca) * 100));
+
+            return {
+                intervaloTroca,
+                kmPercorridoComAPeca,
+                kmRestante,
+                porcentagemVidaUtil,
+            };
+        }
+
+        function calcularCorBarra(percentualVida) {
+            const pct = Math.max(0, Math.min(100, percentualVida));
+            if (pct >= 50) {
+                const ratio = (pct - 50) / 50;
+                const r = Math.round(255 * (1 - ratio));
+                const g = 255;
+                const b = Math.round(255 * ratio);
+                return `rgb(${r}, ${g}, ${b})`;
+            }
+
+            const ratio = pct / 50;
+            const r = 255;
+            const g = Math.round(140 + (115 * ratio));
+            const b = Math.round(20 * ratio);
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+
+        function preencherSelectPecas() {
+            const pecaSelect = document.getElementById('pecaSelect');
+            if (!pecaSelect) {
+                return;
+            }
+
+            const optionInicial = [
+                '<option value="">Selecione a peça</option>',
+                '<option value="__nova__">Outra peça (digitar abaixo)</option>',
+            ].join('');
+            const opcoes = pecasRastreadas
+                .map((peca) => {
+                    const nome = String(peca.nome || '').trim();
+                    return nome ? `<option value="${escapeHtml(nome)}">${escapeHtml(nome)}</option>` : '';
+                })
+                .filter(Boolean)
+                .join('');
+
+            pecaSelect.innerHTML = `${optionInicial}${opcoes}`;
+        }
+
+        function renderizarPecasRastreadas() {
+            const grid = document.getElementById('pecasRastreadasGrid');
+            if (!grid) {
+                return;
+            }
+
+            if (!pecasRastreadas.length) {
+                grid.innerHTML = `
+                    <div class="oficina-empty-health">
+                        <i class="fa-regular fa-circle-dot"></i>
+                        <p>Sem peças rastreadas. Adicione uma nova peça ao lado.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = pecasRastreadas.map((peca) => {
+                const nome = String(peca.nome || 'Peça').trim();
+                const saude = calcularSaudePeca(peca);
+                const corBarra = calcularCorBarra(saude.porcentagemVidaUtil);
+                const glowBarra = corBarra.replace('rgb', 'rgba').replace(')', ', 0.36)');
+                const detalheUrl = `/peca/${encodeURIComponent(nome)}`;
+                const exclusaoUrl = `/deletar_peca_rastreada/${encodeURIComponent(nome)}`;
+
+                return `
+                    <article class="health-item oficina-health-item" data-peca="${escapeHtml(nome)}" data-detalhe-url="${detalheUrl}">
+                        <form method="POST" action="${exclusaoUrl}" style="display:inline;">
+                            <button type="submit" class="peca-delete-btn" title="Parar de rastrear ${escapeHtml(nome)}" onclick="return confirm('Deseja parar de rastrear esta peça?');">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </form>
+                        <div class="health-header">
+                            <span class="peca-icon"><i class="${iconePeca(nome)}"></i></span>
+                            <div>
+                                <strong>${escapeHtml(nome)}</strong>
+                                <p class="subtext">${saude.kmPercorridoComAPeca} / ${saude.intervaloTroca} KM</p>
+                            </div>
+                        </div>
+                        <div class="vida-meta">
+                            <span class="vida-pct">${Math.round(saude.porcentagemVidaUtil)}%</span>
+                            <span class="km-restante">Restam ${saude.kmRestante} km</span>
+                        </div>
+                        <div class="progress-bar-bg">
+                            <div class="progress-bar-fill dynamic-progress-fill" style="width: ${saude.porcentagemVidaUtil}%; --dynamic-bar-color: ${corBarra}; --dynamic-bar-glow: ${glowBarra};"></div>
+                        </div>
+                    </article>
+                `;
+            }).join('');
         }
 
         function aplicarDeepLinkPeca() {
@@ -147,6 +225,7 @@
             const pecaParam = params.get('peca') || pecaInicial;
             const kmParam = params.get('km') || kmInicial;
             const pecaSelect = document.getElementById('pecaSelect');
+            const pecaCustomInput = document.getElementById('pecaCustomInput');
             const kmInput = document.getElementById('kmInputManutencao');
 
             if (kmInput && kmParam) {
@@ -168,6 +247,12 @@
             }
 
             if (!optionSelecionada) {
+                if (pecaCustomInput) {
+                    pecaCustomInput.value = String(pecaParam).trim();
+                    if (pecaSelect) {
+                        pecaSelect.value = '__nova__';
+                    }
+                }
                 return;
             }
 
@@ -177,6 +262,41 @@
                     card.classList.add('health-focus-blink');
                     setTimeout(() => card.classList.remove('health-focus-blink'), 2800);
                 }
+            });
+        }
+
+        function prepararFormularioNovaManutencao() {
+            const form = document.getElementById('novaManutencaoForm');
+            if (!form) {
+                return;
+            }
+
+            form.addEventListener('submit', (event) => {
+                const pecaSelect = document.getElementById('pecaSelect');
+                const pecaCustomInput = document.getElementById('pecaCustomInput');
+                const pecaFinalInput = document.getElementById('pecaFinalInput');
+
+                if (!pecaSelect || !pecaCustomInput || !pecaFinalInput) {
+                    return;
+                }
+
+                const nomeDigitado = String(pecaCustomInput.value || '').trim();
+                const valorSelect = String(pecaSelect.value || '').trim();
+
+                let pecaFinal = '';
+                if (nomeDigitado) {
+                    pecaFinal = nomeDigitado;
+                } else if (valorSelect && valorSelect !== '__nova__') {
+                    pecaFinal = valorSelect;
+                }
+
+                if (!pecaFinal) {
+                    event.preventDefault();
+                    alert('Selecione uma peça cadastrada ou digite uma nova peça.');
+                    return;
+                }
+
+                pecaFinalInput.value = pecaFinal;
             });
         }
 
@@ -193,7 +313,21 @@
             }
         }
 
+        document.getElementById('pecasRastreadasGrid')?.addEventListener('click', function(event) {
+            const card = event.target.closest('.oficina-health-item');
+            if (!card) {
+                return;
+            }
+
+            const detalheUrl = card.dataset.detalheUrl || '';
+            if (detalheUrl) {
+                window.location.href = detalheUrl;
+            }
+        });
+
+        renderizarPecasRastreadas();
+        preencherSelectPecas();
         aplicarDeepLinkPeca();
+        prepararFormularioNovaManutencao();
     </script>
-</body>
-</html>
+    {% endblock %}

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>{% block title %}Moto Tracker{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    {% block head_extra %}{% endblock %}
+</head>
+<body class="{% if embedded %}embedded-view{% endif %} {% block body_class %}{% endblock %}">
+    <div class="container">
+        {% if not embedded %}
+        <header class="topbar">
+            <div class="header-inner">
+                <div class="brand">
+                    {% block header_brand %}
+                    <h1><img src="{{ url_for('static', filename='favicon-96x96.png') }}" alt="Moto Tracker" class="brand-logo"> MOTO TRACKER</h1>
+                    <p>{% block page_heading %}Moto Tracker{% endblock %}</p>
+                    {% endblock %}
+                </div>
+                {% block header_nav %}
+                <nav class="topbar-nav" aria-label="Navegação principal">
+                    <a href="/" class="topbar-link {% if request.path == '/' %}active{% endif %}">Painel</a>
+                    <a href="/analises" class="topbar-link {% if request.path == '/analises' %}active{% endif %}">Análises</a>
+                    <a href="/garagem" class="topbar-link {% if request.path == '/garagem' or request.path == '/oficina' %}active{% endif %}">Oficina</a>
+                    <a href="/veiculos" class="topbar-link {% if request.path == '/veiculos' %}active{% endif %}">Veículos</a>
+                </nav>
+                {% endblock %}
+                <a href="/logout" class="logout-btn" title="Sair"><i class="fa-solid fa-right-from-bracket"></i></a>
+            </div>
+        </header>
+        {% endif %}
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="pecas-flash-stack" aria-live="polite">
+            {% for category, message in messages %}
+            <div class="alert {{ 'alert-success' if category == 'success' else 'alert-error' }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -179,19 +179,10 @@ def _coletar_metricas_por_veiculo(lista_veiculos):
 
 
 def _enriquecer_veiculos_com_metricas(lista_veiculos):
-    metricas_por_veiculo = _coletar_metricas_por_veiculo(lista_veiculos)
-    km_por_veiculo = _coletar_km_maximo_por_veiculo(lista_veiculos)
-
     for veiculo in lista_veiculos:
-        veiculo_id = str(veiculo.get('id', '')).strip()
-        metricas = metricas_por_veiculo.get(veiculo_id, {})
-        total_investido = converter_float(metricas.get('total_investido', 0))
-        custo_ultimos_30_dias = converter_float(metricas.get('custo_ultimos_30_dias', 0))
+        total_investido = converter_float(veiculo.get('total_gastos', 0))
+        custo_ultimos_30_dias = converter_float(veiculo.get('custo_ultimos_30_dias', 0))
         km_atual = converter_int_nao_negativo(veiculo.get('km_atual', 0))
-        km_detectado = converter_int_nao_negativo(km_por_veiculo.get(veiculo_id, 0))
-
-        if km_detectado > km_atual:
-            km_atual = sincronizar_km_atual_veiculo(veiculo_id, km_detectado)
 
         veiculo['total_investido'] = round(total_investido, 2)
         veiculo['total_investido_fmt'] = formatar_moeda_br(total_investido)

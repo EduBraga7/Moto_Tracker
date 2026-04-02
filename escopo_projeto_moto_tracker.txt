@@ -1,59 +1,66 @@
 ================================================================
-PROJETO: MOTO TRACKER (Minimalist Edition)
+PROJETO: MOTO TRACKER (SaaS & Minimalist Edition)
 ================================================================
 OBJETIVO: 
-Sistema simples e direto para controle de gastos, consumo e 
-manutenção da moto Honda Bros 150 (2014).
+Plataforma minimalista em formato PWA para gestão inteligente 
+de consumo e manutenção de veículos. Nascido para uma Bros 150, 
+mas arquitetado para escalar para qualquer veículo.
 
 ----------------------------------------------------------------
-1. FUNCIONALIDADES PRINCIPAIS (MVP - Mínimo Produto Viável)
+1. FUNCIONALIDADES PRINCIPAIS (O "Core" do App)
 ----------------------------------------------------------------
 
-[A] MÓDULO ABASTECIMENTO (Pit Stop)
-   - Input: KM Atual (Odômetro), Litros Abastecidos, Valor Total (R$).
-   - Output Automático: 
-     1. Média de Consumo (KM/L).
-     2. Custo por KM Rodado (R$/KM).
-     3. Preço do Combustível (R$/L).
-   - Armazenamento: Histórico cronológico.
+[A] MÓDULO ABASTECIMENTO (O Fluxo das 3 Caixinhas)
+   - Input Principal: 
+     1. KM Total do Painel (Evita erro de Trip zerado).
+     2. Litros Abastecidos.
+     3. Valor Total Pago (R$).
+   - Input Secundário (Apoio): "Abastecimento Rápido" (Apenas valor em R$ para emergências).
+   - Output Automático (Mágica do Código): 
+     * Média de Consumo (KM/L) calculada pela diferença do último KM.
+     * Custo por KM Rodado (R$/KM).
+     * Preço exato do Litro (Valor / Litros).
 
-[B] MÓDULO OFICINA (Manutenção)
-   - Input: Data, KM Atual, Peça/Serviço, Valor, Observação (Marca/Mecânico).
-   - Output: Histórico de peças trocadas e custo de manutenção.
-   - Alertas Futuros: Troca de óleo, relação, pneu.
+[B] MÓDULO GARAGEM & SAÚDE (Manutenção Dinâmica)
+   - Input de Peças: O usuário cria o item (ex: "Kit Relação", "Óleo Motul") e define o intervalo de troca (ex: 15.000km).
+   - Output: Barra de progresso visual (ex: 80% de vida útil) indicando o desgaste com base no KM atual do veículo.
+   - Histórico: Registro de valores gastos por peça/oficina.
 
-----------------------------------------------------------------
-2. ESTRUTURA DE DADOS (O que vamos salvar no Banco de Dados)
-----------------------------------------------------------------
-
-TABELA: abastecimentos
-   id          (número único)
-   data        (data do abastecimento)
-   km          (odômetro atual)
-   litros      (quantidade)
-   valor       (quanto custou)
-   posto       (opcional: nome do posto)
-
-TABELA: manutencoes
-   id          (número único)
-   data        (data do serviço)
-   km          (odômetro atual)
-   item        (ex: "Kit Relação", "Pneu Traseiro")
-   valor       (custo total)
-   obs         (marca da peça ou nome da oficina)
+[C] EXPERIÊNCIA DO USUÁRIO (UX Premium)
+   - Saudação inteligente baseada no horário ("Bom dia, Eduardo!").
+   - Dashboard limpo focado no veículo selecionado.
+   - Tema Dark / Glassmorphism para conforto visual na rua.
 
 ----------------------------------------------------------------
-3. TECNOLOGIAS (Stack) - ATUALIZADO
+2. ESTRUTURA DE DADOS (Arquitetura Escalável e LGPD)
 ----------------------------------------------------------------
-- Linguagem: Python 3
-- Interface: Web App (Flask)
-- Banco de Dados: Google Firebase (Firestore) -> Para acesso remoto via celular
+A estrutura abandona o relacional simples (SQLite) e vai para NoSQL (Firebase Firestore) em formato de Árvore, garantindo segurança (cada usuário só vê seus dados) e anonimato (sem placas de veículos).
+
+COLEÇÃO: usuarios
+  -> documento: user_id (Gerado pelo Google Auth)
+     - email
+     - nome
+     -> SUB-COLEÇÃO: veiculos
+        -> documento: veiculo_id
+           - apelido (ex: "Bros 150 - Dia a dia")
+           - tipo (Moto/Carro)
+           - km_inicial
+           -> SUB-COLEÇÃO: abastecimentos (km, litros, valor, data)
+           -> SUB-COLEÇÃO: manutencoes (km, peca, valor, data)
+           -> SUB-COLEÇÃO: pecas_rastreadas (nome_peca, intervalo_troca)
 
 ----------------------------------------------------------------
-4. ROTEIRO DE DESENVOLVIMENTO (Sprints)
+3. TECNOLOGIAS (Stack de Alta Performance)
 ----------------------------------------------------------------
-PASSO 1: Criar o script Python básico que pede os dados e calcula a média na hora.
-PASSO 2: Criar o Banco de Dados (SQLite) e conectar com o Python para salvar os dados.
-PASSO 3: Criar a função de ver o Relatório (puxar os dados salvos).
-PASSO 4: Adicionar o módulo de Manutenção.
-PASSO 5: Transformar em Site/App visual.
+- Backend & Regras de Negócio: Python (Flask) ou Serverless.
+- Frontend & UX: HTML/CSS/JS (Foco em Glassmorphism e PWA).
+- Banco de Dados & Auth: Google Firebase (Firestore + Autenticação).
+- Hospedagem: Vercel (Deploy contínuo e rápido).
+
+----------------------------------------------------------------
+4. ROTEIRO DE DESENVOLVIMENTO (O Plano de Ação a partir do dia 31)
+----------------------------------------------------------------
+SPRINT 1 (A Faxina): Limpar erros de banco de dados antigos e implementar a UX de saudação.
+SPRINT 2 (O Novo Motor): Refatorar a tela de abastecimento para o modelo "3 Caixinhas" e Odômetro Total.
+SPRINT 3 (A Escala): Implementar Autenticação Google e reestruturar o Banco de Dados para Multi-Veículos.
+SPRINT 4 (O Lançamento): Transformar em PWA oficial e liberar o link para os testes alfa (colegas de faculdade e trabalho).

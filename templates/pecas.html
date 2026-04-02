@@ -1,64 +1,17 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Inventário de Peças - Moto Tracker</title>
+{% extends 'base.html' %}
 
-    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
-    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
-    <link rel="icon" type="image/png" sizes="96x96" href="{{ url_for('static', filename='favicon-96x96.png') }}">
-    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon-32x32.png') }}">
-    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicon-16x16.png') }}">
-    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+{% block title %}Inventário de Peças - Moto Tracker{% endblock %}
 
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-</head>
-<body>
-    <aside class="sidebar">
-        <div class="sidebar-brand">
-            <img src="{{ url_for('static', filename='favicon-96x96.png') }}" alt="Moto Tracker" class="sidebar-logo">
-            <div>
-                <strong>Moto Tracker</strong>
-                <p>Controle inteligente</p>
-            </div>
-        </div>
-        <nav class="sidebar-menu" aria-label="Menu lateral">
-            <a href="{{ url_for('index') }}" class="sidebar-link"><i class="fa-solid fa-chart-pie"></i> Dashboard</a>
-            <a href="{{ url_for('pecas') }}" class="sidebar-link active"><i class="fa-solid fa-gears"></i> Peças &amp; Oficina</a>
-            <a href="{{ url_for('pecas') }}#AbaConfiguracoes" class="sidebar-link"><i class="fa-solid fa-sliders"></i> Ajustes</a>
-        </nav>
-    </aside>
+{% block page_heading %}Gerencie inventário, manutenção e configurações{% endblock %}
 
-    <nav class="bottom-nav" aria-label="Navegação mobile">
-        <a href="{{ url_for('index') }}" class="bottom-link" title="Dashboard"><i class="fa-solid fa-chart-pie"></i></a>
-        <a href="{{ url_for('pecas') }}" class="bottom-link active" title="Peças & Oficina"><i class="fa-solid fa-gears"></i></a>
-        <a href="{{ url_for('pecas') }}#AbaConfiguracoes" class="bottom-link" title="Ajustes"><i class="fa-solid fa-sliders"></i></a>
-    </nav>
+{% block content %}
 
-    <main class="container pecas-page">
-        <a href="{{ url_for('index') }}" class="btn-toggle pecas-back-btn">
-            <span><i class="fa-solid fa-arrow-left"></i> Voltar</span>
-        </a>
+        <main class="pecas-page">
 
         <header class="glass pecas-head">
             <h1><i class="fa-solid fa-gears"></i> Inventário de Peças</h1>
             <p>Gerencie inventário, manutenção e configurações em um único lugar.</p>
         </header>
-
-        {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-        <div class="pecas-flash-stack" aria-live="polite">
-            {% for category, message in messages %}
-            <div class="alert {{ 'alert-success' if category == 'success' else 'alert-error' }}">{{ message }}</div>
-            {% endfor %}
-        </div>
-        {% endif %}
-        {% endwith %}
 
         <div class="tabs glass pecas-tabs">
             <button class="tab-btn active" onclick="openPecasTab(event, 'AbaVeiculos')"><i class="fa-solid fa-motorcycle"></i> Meus Veículos</button>
@@ -216,7 +169,9 @@
             </div>
         </section>
     </main>
+{% endblock %}
 
+{% block scripts %}
     <script>
         function openPecasTab(evt, tabName) {
             const tabcontent = document.getElementsByClassName('pecas-tab-content');
@@ -287,5 +242,4 @@
             novoVeiculoFormBox.classList.add('hidden');
         });
     </script>
-</body>
-</html>
+{% endblock %}

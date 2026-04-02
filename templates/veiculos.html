@@ -1,41 +1,10 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Veículos - Moto Tracker</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-</head>
-<body>
-    <div class="container">
-        <header class="topbar">
-            <div class="header-inner">
-                <div class="brand">
-                    <h1><img src="{{ url_for('static', filename='favicon-96x96.png') }}" alt="Moto Tracker" class="brand-logo"> MOTO TRACKER</h1>
-                    <p>Gerencie e altere o contexto do veículo ativo</p>
-                </div>
-                <nav class="topbar-nav" aria-label="Navegação principal">
-                    <a href="/" class="topbar-link {% if request.path == '/' %}active{% endif %}">Painel</a>
-                    <a href="/garagem" class="topbar-link {% if request.path == '/garagem' %}active{% endif %}">Oficina</a>
-                    <a href="/veiculos" class="topbar-link {% if request.path == '/veiculos' %}active{% endif %}">Veículos</a>
-                </nav>
-                <a href="/logout" class="logout-btn" title="Sair"><i class="fa-solid fa-right-from-bracket"></i></a>
-            </div>
-        </header>
+{% extends 'base.html' %}
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-        <div class="pecas-flash-stack" aria-live="polite">
-            {% for category, message in messages %}
-            <div class="alert {{ 'alert-success' if category == 'success' else 'alert-error' }}">{{ message }}</div>
-            {% endfor %}
-        </div>
-        {% endif %}
-        {% endwith %}
+{% block title %}Veículos - Moto Tracker{% endblock %}
+
+{% block page_heading %}Gerencie e altere o contexto do veículo ativo{% endblock %}
+
+{% block content %}
 
         <section class="glass pecas-head">
             <h1><i class="fa-solid fa-motorcycle"></i> Meus Veículos</h1>
@@ -157,8 +126,9 @@
                 </div>
             </div>
         </div>
-    </div>
+{% endblock %}
 
+{% block scripts %}
     <script>
         const toggleNovoVeiculo = document.getElementById('toggleNovoVeiculo');
         const novoVeiculoFormBox = document.getElementById('novoVeiculoFormBox');
@@ -629,5 +599,4 @@
             });
         });
     </script>
-</body>
-</html>
+{% endblock %}

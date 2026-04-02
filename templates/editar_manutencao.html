@@ -1,19 +1,16 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Editar ManutenÃ§Ã£o</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Teko:wght@500;600;700&display=swap" rel="stylesheet">
-</head>
-<body>
+{% extends 'base.html' %}
 
-    <div class="container">
+{% block title %}Editar Manutenção{% endblock %}
+
+{% block head_extra %}
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Teko:wght@500;600;700&display=swap" rel="stylesheet">
+{% endblock %}
+
+{% block page_heading %}Editar manutenção{% endblock %}
+
+{% block content %}
         <header>
-            <h1 class="page-title">ðŸ”§ Editar manutenÃ§Ã£o</h1>
+            <h1 class="page-title">?? Editar manutenção</h1>
         </header>
 
         <section class="card" style="padding: 16px;">
@@ -22,12 +19,12 @@
                 <input type="hidden" name="id" value="{{ item.id }}">
 
                 <div class="input-group">
-                    <label>OdÃ´metro (KM)</label>
+                    <label>Odômetro (KM)</label>
                     <input type="number" step="any" name="km" value="{{ item.km }}" required inputmode="decimal">
                 </div>
 
                 <div class="input-group">
-                    <label>ServiÃ§o / PeÃ§a</label>
+                    <label>Serviço / Peça</label>
                     <input type="text" name="servico" value="{{ item.servico }}" required>
                 </div>
 
@@ -37,7 +34,7 @@
                 </div>
 
                 <div class="input-group">
-                    <label>ObservaÃ§Ã£o</label>
+                    <label>Observação</label>
                     <input type="text" name="obs" value="{{ item.obs }}">
                 </div>
 
@@ -47,8 +44,9 @@
                 </div>
             </form>
         </section>
-    </div>
+{% endblock %}
 
+{% block scripts %}
     <script>
         document.querySelectorAll('input[type="number"]').forEach(input => {
             input.addEventListener('input', function() { 
@@ -56,5 +54,4 @@
             });
         });
     </script>
-</body>
-</html>
+{% endblock %}

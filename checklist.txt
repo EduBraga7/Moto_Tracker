@@ -1,0 +1,39 @@
+==================================================
+CHECKLIST DE DESENVOLVIMENTO: MOTO TRACKER (MVP)
+==================================================
+
+[ ] 1. FAXINA DOS DADOS (BANCO DE DATOS)
+    - [ ] Acessar o console do Firebase/Supabase.
+    - [ ] Excluir o registro de "63 Litros" (erro de digitação).
+    - [ ] Corrigir o registro de "KM 283" para o valor real do hodômetro total.
+    - [ ] Validar se as médias de consumo voltaram ao normal após a exclusão.
+
+[ ] 2. REFATORAÇÃO DO ABASTECIMENTO (O NOVO MOTOR)
+    - [ ] Criar nova tela/modal de "Pit Stop" com 3 inputs claros:
+          * KM Total do Painel (Hodômetro Inteiro).
+          * Litros Abastecidos.
+          * Valor Total Pago (R$).
+    - [ ] Implementar lógica: KM_Percorrido = (KM_Atual - KM_Anterior_Banco).
+    - [ ] Adicionar validação: Impedir salvar se KM_Atual < KM_Anterior.
+    - [ ] Criar cálculo automático de Preço/Litro (Valor / Litros).
+
+[ ] 3. UPGRADE VISUAL "MOTO-NOIR" (UI/UX)
+    - [x] Implementar saudação dinâmica: "Bom dia/tarde/noite, Eduardo!".
+    - [x] Refatorar Card "Saúde do Óleo" (Barra de Progresso Ciano -> Laranja).
+    - [] Substituir Checkbox de troca por Botão de Ação com ícone de "Sync".
+    - [x] Criar Aba de Analytics (Mover gráficos da Home para esta nova página).
+
+[ ] 4. ESTRUTURA E ESCALABILIDADE (SAAS READY)
+    - [ ] Configurar arquivo `.env` para esconder chaves do Firebase/Vercel.
+    - [ ] Atualizar `.copilot-instructions.md` com as novas regras de KM Total.
+    - [ ] Implementar Login do Google (Firebase Auth).
+    - [ ] Criar lógica de `user_id` para isolar dados de diferentes usuários.
+
+[ ] 5. FLEXIBILIDADE (PEÇAS DINÂMICAS)
+    - [ ] Remover nomes de peças fixas do código (Hardcoded).
+    - [ ] Criar formulário para o usuário cadastrar "Nova Peça" e "Intervalo de Troca".
+    - [ ] Vincular progresso das barras ao KM Total do painel cadastrado.
+
+==================================================
+META FINAL: App leve, blindado e pronto para os amigos!
+==================================================

@@ -113,6 +113,37 @@ _listar_saude_pecas = business_service._listar_saude_pecas
 _coletar_metricas_por_veiculo = business_service._coletar_metricas_por_veiculo
 _enriquecer_veiculos_com_metricas = business_service._enriquecer_veiculos_com_metricas
 
+
+def _atualizar_km_peca_rastreada_existente(veiculo_id, nome_peca, km_troca):
+    nome_peca_norm = _normalizar_texto(nome_peca)
+    if not veiculo_id or not nome_peca_norm:
+        return False
+
+    try:
+        for item in db_layer.buscar_saude_pecas_por_veiculo(veiculo_id):
+            nome_existente = str(item.get('nome_peca', '')).strip()
+            if _normalizar_texto(nome_existente) != nome_peca_norm:
+                continue
+
+            _upsert_saude_peca(veiculo_id, nome_existente, ultimo_km_troca=km_troca)
+            return True
+    except Exception as exc:
+        logging.exception('Erro ao sincronizar ultima troca da peca rastreada: %s', exc)
+
+    return False
+
+
+def _ajustar_total_gastos_veiculo(veiculo_id, delta_valor):
+    if not veiculo_id:
+        return
+
+    delta = float(util_converter_float(delta_valor))
+    if abs(delta) < 0.000001:
+        return
+
+    doc_ref = db.collection('veiculos').document(str(veiculo_id))
+    doc_ref.update({'total_gastos': firestore.Increment(delta)})
+
 # --- DECORATOR: O "PORTEIRO" ---
 def login_required(f):
     @functools.wraps(f)
@@ -291,6 +322,7 @@ def adicionar_rapido():
         )
         km_veiculo_atual = _converter_int_nao_negativo(veiculo_ativo.get('km_atual', 0))
         db.collection('abastecimentos').add(payload)
+        _ajustar_total_gastos_veiculo(veiculo_ativo_id, payload.get('preco_total', 0))
 
         if payload['km'] > km_veiculo_atual:
             km_sincronizado = _sincronizar_km_atual_veiculo(veiculo_ativo_id, payload['km'])
@@ -328,14 +360,19 @@ def adicionar_manutencao():
         )
 
         db.collection('manutencoes').add(payload)
+        _ajustar_total_gastos_veiculo(veiculo_ativo['id'], payload.get('valor', 0))
 
         peca_norm = _normalizar_texto(peca)
         if peca_norm:
             km_troca = _converter_int_nao_negativo(payload.get('km', 0))
-            _upsert_saude_peca(veiculo_ativo['id'], peca, ultimo_km_troca=km_troca)
+            peca_rastreada_atualizada = _atualizar_km_peca_rastreada_existente(
+                veiculo_ativo['id'],
+                peca,
+                km_troca,
+            )
 
-            # Compatibilidade legada para o campo antigo de óleo.
-            if peca_norm == 'oleo':
+            # Compatibilidade legada para o campo antigo de óleo quando a peça existir em Saúde das Peças.
+            if peca_rastreada_atualizada and peca_norm == 'oleo':
                 db.collection('veiculos').document(veiculo_ativo['id']).update({'ultimo_oleo_km': km_troca})
     except Exception as exc:
         logging.exception('Erro ao adicionar manutencao: %s', exc)
@@ -371,6 +408,7 @@ def salvar_peca_rastreada():
         flash('Nao foi possivel salvar a nova peca.', 'error')
 
     return redirect(url_for('garagem'))
+
 
 @app.route('/deletar_peca_rastreada/<path:nome_peca>', methods=['POST'])
 @login_required
@@ -426,7 +464,10 @@ def deletar(id):
         flash('Registro de abastecimento nao pertence ao veiculo ativo.', 'error')
         return redirect('/')
 
+    doc = db.collection('abastecimentos').document(id).get()
+    valor_removido = util_converter_float((doc.to_dict() or {}).get('preco_total', (doc.to_dict() or {}).get('valor', 0))) if doc.exists else 0
     db.collection('abastecimentos').document(id).delete()
+    _ajustar_total_gastos_veiculo(veiculo_ativo_id, -valor_removido)
     return redirect('/')
 
 @app.route('/deletar_manutencao/<id>')
@@ -439,7 +480,10 @@ def deletar_manutencao(id):
         flash('Registro de manutencao nao pertence ao veiculo ativo.', 'error')
         return redirect(url_for('pecas'))
 
+    doc = db.collection('manutencoes').document(id).get()
+    valor_removido = util_converter_float((doc.to_dict() or {}).get('valor', 0)) if doc.exists else 0
     db.collection('manutencoes').document(id).delete()
+    _ajustar_total_gastos_veiculo(veiculo_ativo_id, -valor_removido)
     return redirect('/')
 
 @app.route('/deletar_config/<id>')
@@ -603,6 +647,7 @@ def garagem():
     veiculo_ativo_id = veiculo_ativo.get('id') if veiculo_ativo else None
     peca_preselecionada = request.args.get('peca', '').strip()
     km_preselecionado = request.args.get('km', '').strip()
+    embedded = request.args.get('embedded', '').strip() == '1'
 
     if veiculo_ativo_id:
         migrar_registros_sem_veiculo_id('manutencoes', veiculo_ativo_id)
@@ -643,6 +688,7 @@ def garagem():
         hodometro_total_atual=km_atual_moto,
         peca_preselecionada=peca_preselecionada,
         km_preselecionado=km_preselecionado,
+        embedded=embedded,
     )
 
 
@@ -650,10 +696,26 @@ def garagem():
 @login_required
 def veiculos():
     veiculo_ativo = obter_veiculo_ativo()
+    embedded = request.args.get('embedded', '').strip() == '1'
     lista_veiculos = listar_veiculos()
+
+    veiculos_sem_total = [v for v in lista_veiculos if 'total_gastos' not in v]
+    if veiculos_sem_total:
+        metricas_legadas = _coletar_metricas_por_veiculo(veiculos_sem_total)
+        for veiculo in veiculos_sem_total:
+            veiculo_id = str(veiculo.get('id', '')).strip()
+            if not veiculo_id:
+                continue
+            total_legado = util_converter_float((metricas_legadas.get(veiculo_id) or {}).get('total_investido', 0))
+            veiculo['total_gastos'] = round(total_legado, 2)
+            try:
+                db.collection('veiculos').document(veiculo_id).update({'total_gastos': veiculo['total_gastos']})
+            except Exception as exc:
+                logging.exception('Erro ao persistir total_gastos legado do veiculo id=%s: %s', veiculo_id, exc)
+
     _enriquecer_veiculos_com_metricas(lista_veiculos)
 
-    return render_template('veiculos.html', veiculos=lista_veiculos, veiculo_ativo=veiculo_ativo, veiculo_editando=None)
+    return render_template('veiculos.html', veiculos=lista_veiculos, veiculo_ativo=veiculo_ativo, veiculo_editando=None, embedded=embedded)
 
 
 @app.route('/pecas')
@@ -761,6 +823,7 @@ def cadastrar_veiculo():
             km_atual=km_atual,
             ultimo_oleo_km=km_atual,
         )
+        payload['total_gastos'] = 0.0
         payload['data_cadastro'] = datetime.now().strftime('%d/%m/%Y %H:%M')
         novo_veiculo_ref.set(payload)
         for _, (nome_peca, km_limite) in db_layer.DEFAULT_PART_LIMITS.items():
@@ -919,6 +982,49 @@ def registrar_troca_oleo():
         return {'sucesso': False, 'mensagem': 'Erro ao registrar troca de óleo.'}, 500
 
 
+@app.route('/calibrar_saude_oleo', methods=['POST'])
+@login_required
+def calibrar_saude_oleo():
+    try:
+        dados = request.get_json(silent=True) or {}
+        km_faltam_informado = _converter_int_nao_negativo(dados.get('km_faltam', 0))
+
+        veiculo_ativo = obter_veiculo_ativo()
+        if not veiculo_ativo:
+            return {'sucesso': False, 'mensagem': 'Veiculo ativo nao encontrado.'}, 404
+
+        veiculo_id = str(veiculo_ativo.get('id', '')).strip()
+        km_atual = _converter_int_nao_negativo(veiculo_ativo.get('km_atual', 0))
+
+        saude_oleo = next(
+            (item for item in db_layer.buscar_saude_pecas_por_veiculo(veiculo_id) if _normalizar_texto(item.get('nome_peca', '')) == 'oleo'),
+            None,
+        )
+        intervalo_total = _converter_int_nao_negativo((saude_oleo or {}).get('km_limite', 1000)) or 1000
+        km_faltam = min(intervalo_total, km_faltam_informado)
+
+        novo_ultimo_km_troca = km_atual - (intervalo_total - km_faltam)
+        novo_ultimo_km_troca = max(0, _converter_int_nao_negativo(novo_ultimo_km_troca))
+
+        _upsert_saude_peca(veiculo_id, 'Óleo', ultimo_km_troca=novo_ultimo_km_troca, km_limite=intervalo_total)
+        db.collection('veiculos').document(veiculo_id).update({'ultimo_oleo_km': novo_ultimo_km_troca})
+
+        km_rodado = max(0, km_atual - novo_ultimo_km_troca)
+        km_restante = max(0, intervalo_total - km_rodado)
+
+        return {
+            'sucesso': True,
+            'mensagem': 'Saude do oleo calibrada com sucesso.',
+            'km_restante': km_restante,
+            'intervalo_troca': intervalo_total,
+            'km_ultima_troca': novo_ultimo_km_troca,
+            'km_atual': km_atual,
+        }, 200
+    except Exception as exc:
+        logging.exception('Erro ao calibrar saude do oleo: %s', exc)
+        return {'sucesso': False, 'mensagem': 'Erro ao calibrar saude do oleo.'}, 500
+
+
 @app.route('/registrar_troca_peca', methods=['POST'])
 @login_required
 def registrar_troca_peca():
@@ -1024,14 +1130,18 @@ def editar(id):
 
     if request.method == 'POST':
         try:
+            doc_atual = db.collection('abastecimentos').document(id).get()
+            valor_anterior = util_converter_float((doc_atual.to_dict() or {}).get('preco_total', (doc_atual.to_dict() or {}).get('valor', 0))) if doc_atual.exists else 0
+            valor_novo = float(request.form['valor'])
             data_padrao = converter_data_iso_para_padrao(request.form.get('data', ''))
             db.collection('abastecimentos').document(id).update({
                 'km': float(request.form['km']),
                 'litros': float(request.form['litros']),
-                'preco_total': float(request.form['valor']),
+                'preco_total': valor_novo,
                 'data': data_padrao,
                 'veiculo_id': veiculo_ativo_id,
             })
+            _ajustar_total_gastos_veiculo(veiculo_ativo_id, valor_novo - valor_anterior)
         except Exception as exc:
             logging.exception('Erro ao atualizar abastecimento id=%s via modal: %s', id, exc)
         return redirect('/')
@@ -1054,16 +1164,20 @@ def atualizar():
         return redirect('/')
 
     try:
+        doc_atual = db.collection('abastecimentos').document(id).get()
+        valor_anterior = util_converter_float((doc_atual.to_dict() or {}).get('preco_total', (doc_atual.to_dict() or {}).get('valor', 0))) if doc_atual.exists else 0
+        valor_novo = float(request.form['valor'])
         payload = {
             'km': float(request.form['km']),
             'litros': float(request.form['litros']),
-            'preco_total': float(request.form['valor']),
+            'preco_total': valor_novo,
             'veiculo_id': veiculo_ativo_id,
         }
         if data_form := request.form.get('data', '').strip():
             payload['data'] = converter_data_iso_para_padrao(data_form)
 
         db.collection('abastecimentos').document(id).update(payload)
+        _ajustar_total_gastos_veiculo(veiculo_ativo_id, valor_novo - valor_anterior)
     except Exception as exc:
         logging.exception('Erro ao atualizar abastecimento id=%s: %s', id, exc)
     return redirect('/')
@@ -1096,13 +1210,17 @@ def atualizar_manutencao():
         return redirect(url_for('pecas'))
 
     try:
+        doc_atual = db.collection('manutencoes').document(id).get()
+        valor_anterior = util_converter_float((doc_atual.to_dict() or {}).get('valor', 0)) if doc_atual.exists else 0
+        valor_novo = float(request.form['valor'])
         db.collection('manutencoes').document(id).update({
             'km': float(request.form['km']),
             'servico': request.form['servico'],
-            'valor': float(request.form['valor']),
+            'valor': valor_novo,
             'obs': request.form['obs'],
             'veiculo_id': veiculo_ativo_id,
         })
+        _ajustar_total_gastos_veiculo(veiculo_ativo_id, valor_novo - valor_anterior)
     except Exception as exc:
         logging.exception('Erro ao atualizar manutencao id=%s: %s', id, exc)
     return redirect('/')
@@ -1178,6 +1296,7 @@ def webhook_telegram(token):
             veiculo_id=veiculo_ativo_id,
         )
         db.collection('abastecimentos').add(payload)
+        _ajustar_total_gastos_veiculo(veiculo_ativo_id, payload.get('preco_total', 0))
         _sincronizar_km_atual_veiculo(veiculo_ativo_id, payload['km'])
 
         if chat_id is not None:

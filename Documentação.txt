@@ -1,0 +1,38 @@
+==================================================
+DOCUMENTO DE REQUISITOS E IDEIAS - MOTO TRACKER
+==================================================
+
+1. INTERFACE E EXPERIÊNCIA DO USUÁRIO (UX)
+--------------------------------------------------
+- Saudação Dinâmica: Substituir o texto estático do topo por uma saudação inteligente ("Bom dia, Eduardo!") que muda conforme a hora.
+- Foco no Resumo: Adicionar a frase direta "Aqui está o resumo da sua Bros 150" (ou o apelido do veículo atual) logo abaixo da saudação, limpando o visual.
+- Aba Exclusiva de Analytics: Criar uma tela dedicada apenas para gráficos, histórico de consumo e relatórios, com filtros por mês e ano.
+- Identidade Visual: Manter e aprimorar o tema Dark/Glassmorphism para manter a estética de aplicativo premium.
+
+2. NOVO FLUXO DE ABASTECIMENTO (Prevenção de Erros)
+--------------------------------------------------
+- Odômetro Total: O sistema passa a exigir sempre o KM Total do painel, calculando a distância rodada automaticamente para evitar bugs de "Trip".
+- Formulário em "3 Caixinhas":
+  1. "Qual o KM Total no painel agora?"
+  2. "Quantos litros abasteceu?"
+  3. "Qual o valor total pago?" (O código calcula o preço por litro sozinho).
+- Abastecimento Rápido: Botão de apoio para valores avulsos (ex: "coloquei 20 reais"), sem a obrigatoriedade de calcular a média exata de KM/L.
+- CRUD Direto: Ícones de Editar (lápis) e Excluir (lixeira) diretamente nos cards de histórico para correção rápida de erros de digitação.
+
+3. MANUTENÇÃO E PERSONALIZAÇÃO (O Motor)
+--------------------------------------------------
+- Peças 100% Dinâmicas: Remover itens fixos do código fonte. O próprio usuário cria a peça (ex: Óleo, Relação, Filtro) e define a quilometragem para a troca.
+- Suporte a Multi-veículos: Preparar o código para gerenciar a garagem inteira, aceitando a futura inclusão de carros ou caminhões.
+
+4. ESCALABILIDADE E SEGURANÇA (Visão SaaS)
+--------------------------------------------------
+- Login do Google (OAuth): Autenticação rápida e segura, sem a necessidade de o usuário criar ou gerenciar senhas novas.
+- Minimização de Dados (LGPD): Exigir apenas o E-mail (para login) e um Apelido do Veículo. Sem coleta de placa, chassi ou dados sensíveis.
+- Nuvem e Isolamento: Migração do banco local para uma solução em nuvem (Firebase/Supabase), com regras que impedem um usuário de acessar os dados de outro.
+- Painel Admin & BI: Criação de um perfil de administrador para leitura e análise global dos dados da plataforma usando ferramentas de Business Intelligence.
+- Rebranding (Futuro): Planejar a mudança do nome "Moto Tracker" para algo mais abrangente (ex: AutoMetrics, V-Control) quando a plataforma abrir para carros.
+
+==================================================
+* NOTA DE EVOLUÇÃO (Fase 2): 
+Recursos avançados de PWA como Modo Offline (Service Workers), Leitura via Câmera (OCR), Notificações Push e o Módulo de S.O.S. com Geolocalização de oficinas estão documentados e mapeados para implementação exclusiva após a consolidação desta versão MVP.
+==================================================

@@ -1,10 +1,8 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Moto Tracker</title>
+{% extends 'base.html' %}
 
+{% block title %}Moto Tracker{% endblock %}
+
+{% block head_extra %}
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
     <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
     <link rel="icon" type="image/png" sizes="96x96" href="{{ url_for('static', filename='favicon-96x96.png') }}">
@@ -14,45 +12,36 @@
     <meta name="theme-color" content="#121212">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&family=Poppins:wght@500;600;700&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
-</head>
-<body>
-    <div class="container">
-        <header class="topbar">
-            <div class="header-inner">
-                <div class="brand">
-                    <h1><img src="{{ url_for('static', filename='favicon-96x96.png') }}" alt="Moto Tracker" class="brand-logo"> MOTO TRACKER</h1>
-                    <p class="active-vehicle-info">
-                        <span class="active-dot" aria-hidden="true"></span>
-                        {{ veiculo_ativo.nome | default(veiculo_ativo.apelido, true) | default('Minha Moto', true) }}
-                        ({{ veiculo_ativo.ano | default(veiculo_ativo.ano_modelo, true) | default('N/A', true) }})
-                    </p>
-                    <p>Acompanhe seus gastos, autonomia e manutenção em um só lugar</p>
-                </div>
-                <nav class="topbar-nav" aria-label="Navegação principal">
-                    <a href="/" class="topbar-link {% if request.path == '/' %}active{% endif %}">Painel</a>
-                    <a href="/garagem" class="topbar-link {% if request.path == '/garagem' %}active{% endif %}">Oficina</a>
-                    <a href="/veiculos" class="topbar-link {% if request.path == '/veiculos' %}active{% endif %}">Veículos</a>
-                </nav>
-                <a href="/logout" class="logout-btn" title="Sair"><i class="fa-solid fa-right-from-bracket"></i></a>
-            </div>
-        </header>
+{% endblock %}
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-        <div class="pecas-flash-stack" aria-live="polite">
-            {% for category, message in messages %}
-            <div class="alert {{ 'alert-success' if category == 'success' else 'alert-error' }}">{{ message }}</div>
-            {% endfor %}
-        </div>
-        {% endif %}
-        {% endwith %}
+{% block header_brand %}
+    <h1><img src="{{ url_for('static', filename='favicon-96x96.png') }}" alt="Moto Tracker" class="brand-logo"> MOTO TRACKER</h1>
+    <p class="active-vehicle-info">
+        <span class="active-dot" aria-hidden="true"></span>
+        {{ veiculo_ativo.nome | default(veiculo_ativo.apelido, true) | default('Minha Moto', true) }}
+        ({{ veiculo_ativo.ano | default(veiculo_ativo.ano_modelo, true) | default('N/A', true) }})
+    </p>
+    <p>Acompanhe seus gastos, autonomia e manutenção em um só lugar</p>
+{% endblock %}
+
+{% block header_nav %}
+    <nav class="topbar-nav" aria-label="Navegação principal">
+        <a href="/" class="topbar-link topbar-view-link {% if request.path == '/' %}active{% endif %}" data-view-target="painelView">Painel</a>
+        <a href="/analises" class="topbar-link topbar-view-link {% if request.path == '/analises' %}active{% endif %}" data-view-target="analisesView">Análises</a>
+        <a href="/garagem" class="topbar-link topbar-view-link {% if request.path == '/garagem' %}active{% endif %}" data-view-target="oficinaView">Oficina</a>
+        <a href="/veiculos" class="topbar-link topbar-view-link {% if request.path == '/veiculos' %}active{% endif %}" data-view-target="veiculosView">Veículos</a>
+    </nav>
+{% endblock %}
+
+{% block content %}
+
+        <section id="painelView" class="app-view {% if request.path == '/' %}is-active{% endif %}" style="display: {% if request.path == '/' %}block{% else %}none{% endif %};">
+            <section class="moto-noir-header" aria-label="Saudação do painel">
+                <h1 id="motoNoirGreeting">Bom dia, Eduardo!</h1>
+                <p>Aqui está o resumo da sua Bros 150:</p>
+            </section>
 
         <div class="kpi-container">
             <div class="kpi-card glass">
@@ -86,40 +75,36 @@
             </div>
         </div>
 
-        <section class="health-section glass">
-            <div class="header-pecas">
-                <h3><i class="fa-solid fa-heart-pulse"></i> Saúde das Peças</h3>
+
+        <!-- Card Grande: Saúde do Óleo -->
+        <section class="oleo-section glass">
+            <div class="oleo-header">
+                <h3><i class="fa-solid fa-oil-can"></i> Saúde do Óleo</h3>
+                <p class="oleo-support-text">Baseado no odômetro total do veículo</p>
             </div>
-            <div class="health-grid">
-                {% for peca in saude_pecas %}
-                {% set nome_lower = peca.nome_peca | lower %}
-                {% set classe_cor = 'vida-ok' if peca.porcentagem < 75 else ('vida-alerta' if peca.porcentagem <= 90 else 'vida-critica') %}
-                <a href="{{ url_for('detalhes_peca', nome_peca=peca.nome_peca) }}" class="health-link" title="Ver detalhes de {{ peca.nome_peca }}">
-                    <article class="health-item">
-                        <div class="health-header">
-                            <span class="peca-icon">
-                                {% if 'oleo' in nome_lower %}<i class="fa-solid fa-oil-can"></i>
-                                {% elif 'pneu' in nome_lower %}<i class="fa-solid fa-circle-notch"></i>
-                                {% elif 'relacao' in nome_lower %}<i class="fa-solid fa-link"></i>
-                                {% else %}<i class="fa-solid fa-gear"></i>{% endif %}
-                            </span>
-                            <div>
-                                <strong>{{ peca.nome_peca }}</strong>
-                                <p class="subtext">{{ peca.km_rodado }} / {{ peca.km_limite }} KM</p>
-                            </div>
+            <div class="oleo-main-row">
+                <div class="oleo-progress-block">
+                    <div
+                        class="oleo-progress-bar-bg"
+                        data-km-restante="{{ km_restante_oleo | default(1000) }}"
+                        data-intervalo-troca="{{ km_limite_oleo | default(1000) }}"
+                    >
+                        <div class="oleo-progress-bar-fill" id="oleoProgressBarFill" style="width: 0%;"></div>
+                    </div>
+                </div>
+                <div class="oleo-action-block">
+                    <button type="button" id="btnAjustarOleo" class="oleo-ajustar-link" title="Calibrar saúde do óleo">
+                        <i class="fa-solid fa-pen"></i> Ajustar
+                    </button>
+                    <div class="oleo-restante-text">Restam <span>{{ km_restante_oleo | default(1000) }}</span> km</div>
+                    <form id="calibrarOleoForm" class="oleo-calibrar-form" style="display: none;">
+                        <label for="kmFaltamOleoInput">Quantos KM faltam para a próxima troca?</label>
+                        <div class="oleo-calibrar-row">
+                            <input type="number" id="kmFaltamOleoInput" min="0" step="1" inputmode="numeric" required>
+                            <button type="submit" class="oleo-calibrar-save">Salvar</button>
                         </div>
-                        <div class="vida-meta">
-                            <span class="vida-pct {{ classe_cor }}">{{ peca.porcentagem | int }}%</span>
-                            <span class="km-restante">Restam {{ peca.km_restante }} km</span>
-                        </div>
-                        <div class="progress-bar-bg">
-                            <div class="progress-bar-fill {{ classe_cor }}" style="width: {{ peca.porcentagem }}%;"></div>
-                        </div>
-                    </article>
-                </a>
-                {% else %}
-                <p class="empty-note">Nenhuma peça monitorada para o veículo ativo.</p>
-                {% endfor %}
+                    </form>
+                </div>
             </div>
         </section>
 
@@ -158,10 +143,12 @@
                 <div class="chart-card glass">
                     <h3><i class="fa-solid fa-wave-square"></i> Km/L</h3>
                     <canvas id="lineChart"></canvas>
+                    <p id="lineChartEmpty" class="chart-empty-message" style="display: none;">Sem dados para o gráfico de Km/L.</p>
                 </div>
                 <div class="chart-card glass">
                     <h3><i class="fa-solid fa-coins"></i> Gastos Mensais</h3>
                     <canvas id="barChart"></canvas>
+                    <p id="barChartEmpty" class="chart-empty-message" style="display: none;">Sem dados para o gráfico de gastos mensais.</p>
                 </div>
             </div>
 
@@ -185,10 +172,6 @@
 
                     <div class="fuel-col-performance">
                         <span class="tag-kml {% if item.kml == '---' %}muted{% endif %}">{{ item.kml if item.kml != '---' else '--' }} km/L</span>
-                        <button type="button" class="tank-toggle" title="Marcar tanque cheio">
-                            <i class="ph ph-drop"></i>
-                            <span>Tanque cheio</span>
-                        </button>
                     </div>
 
                     <div class="fuel-col-actions">
@@ -211,7 +194,70 @@
             </div>
         </div>
 
-    </div>
+        </section>
+
+        <section id="analisesView" class="app-view {% if request.path == '/analises' %}is-active{% endif %}" style="display: {% if request.path == '/analises' %}block{% else %}none{% endif %};">
+            <section class="analises-shell glass">
+                <div class="analises-top-row">
+                    <div class="analises-heading">
+                        <h2><i class="fa-solid fa-gauge-high"></i> Central de Análises</h2>
+                        <p>Métricas avançadas de desempenho da sua Bros 150</p>
+                    </div>
+                    <label class="analises-year-filter" for="analisesAnoSelect">
+                        Ano
+                        <select id="analisesAnoSelect"></select>
+                    </label>
+                </div>
+
+                <div class="analises-metricas-grid">
+                    <article class="analise-metrica-card glass">
+                        <h4>Total Percorrido no Ano</h4>
+                        <p id="totalAnoKm">0 km</p>
+                    </article>
+                    <article class="analise-metrica-card glass">
+                        <h4>Mês que mais rodou</h4>
+                        <p id="mesMaisRodou">Sem dados</p>
+                    </article>
+                    <article class="analise-metrica-card glass">
+                        <h4>Média de Km/Mês</h4>
+                        <p id="mediaKmMes">0 km</p>
+                    </article>
+                </div>
+
+                <div class="analises-charts-grid">
+                    <article class="analise-chart-card glass">
+                        <h3><i class="fa-solid fa-road"></i> Km Rodados por Mês</h3>
+                        <canvas id="kmPorMesChart"></canvas>
+                    </article>
+                    <article class="analise-chart-card glass">
+                        <h3><i class="fa-solid fa-chart-area"></i> Visão Anual</h3>
+                        <canvas id="visaoAnualChart"></canvas>
+                    </article>
+                </div>
+            </section>
+        </section>
+
+        <section id="oficinaView" class="app-view" style="display: none;">
+            <div class="spa-embed-wrap glass">
+                <iframe
+                    id="oficinaFrame"
+                    class="spa-embed-frame"
+                    src="/garagem?embedded=1"
+                    title="Oficina"
+                ></iframe>
+            </div>
+        </section>
+
+        <section id="veiculosView" class="app-view" style="display: none;">
+            <div class="spa-embed-wrap glass">
+                <iframe
+                    id="veiculosFrame"
+                    class="spa-embed-frame"
+                    src="/veiculos?embedded=1"
+                    title="Veículos"
+                ></iframe>
+            </div>
+        </section>
 
     <div id="editFuelModal" class="modal-backdrop" aria-hidden="true">
         <div class="modal-card glass" role="dialog" aria-modal="true" aria-labelledby="editFuelModalTitle">
@@ -263,8 +309,26 @@
         </div>
     </footer>
 
+{% endblock %}
+
+{% block scripts %}
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
+        const fuelRecords = {{ abastecimentos | tojson | safe }};
+        const lineLabelsRaw = {{ labels_linha | safe }};
+        const lineValuesRaw = {{ values_linha | safe }};
+        const barLabelsRaw = {{ labels_barra | safe }};
+        const barValuesRaw = {{ values_barra | safe }};
+        const lineLabels = Array.isArray(lineLabelsRaw) ? lineLabelsRaw : [];
+        const lineValues = Array.isArray(lineValuesRaw) ? lineValuesRaw : [];
+        const barLabels = Array.isArray(barLabelsRaw) ? barLabelsRaw : [];
+        const barValues = Array.isArray(barValuesRaw) ? barValuesRaw : [];
+        const monthLabels = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+        let kmPorMesChart;
+        let visaoAnualChart;
+        let painelLineChart;
+        let painelBarChart;
+
         const quickExamples = [
             'Exemplo: 45.50 7.2 12890',
             'Exemplo: 50.00 8.0 12922',
@@ -302,60 +366,356 @@
             }
         }
 
-        const ctxLine = document.getElementById('lineChart').getContext('2d');
-        const lineGradient = ctxLine.createLinearGradient(0, 0, 0, 260);
-        lineGradient.addColorStop(0, 'rgba(58, 226, 242, 0.46)');
-        lineGradient.addColorStop(1, 'rgba(58, 226, 242, 0.02)');
+        function parseFuelDate(value) {
+            if (!value) {
+                return null;
+            }
 
-        new Chart(ctxLine, {
-            type: 'line',
-            data: {
-                labels: {{ labels_linha | safe }},
-                datasets: [{
-                    label: 'Km/L',
-                    data: {{ values_linha | safe }},
-                    borderColor: '#3ae2f2',
-                    backgroundColor: lineGradient,
-                    borderWidth: 3,
-                    tension: 0.34,
-                    fill: true,
-                    pointRadius: 4,
-                    pointHoverRadius: 5,
-                    pointBackgroundColor: '#7ef4ff'
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: { grid: { color: 'rgba(120,145,190,0.16)' }, ticks: { color: '#9eb3d6' } },
-                    x: { grid: { color: 'rgba(120,145,190,0.1)' }, ticks: { color: '#9eb3d6' } }
+            if (value.includes('T')) {
+                const isoDate = new Date(value);
+                return Number.isNaN(isoDate.getTime()) ? null : isoDate;
+            }
+
+            const datePart = value.split(' ')[0] || value;
+            const parts = datePart.split('/');
+            if (parts.length < 3) {
+                return null;
+            }
+
+            const day = Number(parts[0]);
+            const month = Number(parts[1]);
+            const year = Number(parts[2]);
+            const parsedDate = new Date(year, month - 1, day);
+            return Number.isNaN(parsedDate.getTime()) ? null : parsedDate;
+        }
+
+        function buildYearlyAnalytics(records, year) {
+            const entries = records
+                .map(item => {
+                    const date = parseFuelDate(String(item.data || ''));
+                    return {
+                        date,
+                        km: Number(item.km || 0),
+                    };
+                })
+                .filter(item => item.date && item.date.getFullYear() === year)
+                .sort((a, b) => a.date - b.date);
+
+            const monthlyMinKm = Array(12).fill(null);
+            const monthlyMaxKm = Array(12).fill(null);
+
+            entries.forEach(item => {
+                const monthIndex = item.date.getMonth();
+                if (monthlyMinKm[monthIndex] === null || item.km < monthlyMinKm[monthIndex]) {
+                    monthlyMinKm[monthIndex] = item.km;
+                }
+                if (monthlyMaxKm[monthIndex] === null || item.km > monthlyMaxKm[monthIndex]) {
+                    monthlyMaxKm[monthIndex] = item.km;
+                }
+            });
+
+            const kmByMonth = monthlyMinKm.map((minKm, index) => {
+                const maxKm = monthlyMaxKm[index];
+                if (minKm === null || maxKm === null) {
+                    return 0;
+                }
+                return Math.max(0, Math.round(maxKm - minKm));
+            });
+
+            const cumulative = [];
+            let runningTotal = 0;
+            kmByMonth.forEach(value => {
+                runningTotal += value;
+                cumulative.push(runningTotal);
+            });
+
+            return { kmByMonth, cumulative };
+        }
+
+        function updateAnalisesMetricas(kmByMonth) {
+            const totalAno = kmByMonth.reduce((sum, value) => sum + value, 0);
+            const maiorKm = Math.max(...kmByMonth);
+            const idxMelhorMes = kmByMonth.indexOf(maiorKm);
+
+            const totalAnoElement = document.getElementById('totalAnoKm');
+            const mesMaisRodouElement = document.getElementById('mesMaisRodou');
+            const mediaKmMesElement = document.getElementById('mediaKmMes');
+
+            totalAnoElement.textContent = `${totalAno.toLocaleString('pt-BR')} km`;
+            mesMaisRodouElement.textContent = maiorKm > 0 ? `${monthLabels[idxMelhorMes]} (${maiorKm.toLocaleString('pt-BR')} km)` : 'Sem dados';
+            mediaKmMesElement.textContent = `${Math.round(totalAno / 12).toLocaleString('pt-BR')} km`;
+        }
+
+        function createOrUpdateAnaliseCharts(kmByMonth, cumulative) {
+            const kmCtx = document.getElementById('kmPorMesChart').getContext('2d');
+            const annualCtx = document.getElementById('visaoAnualChart').getContext('2d');
+
+            const kmGradient = kmCtx.createLinearGradient(0, 0, 0, 280);
+            kmGradient.addColorStop(0, 'rgba(0, 255, 255, 0.9)');
+            kmGradient.addColorStop(1, 'rgba(0, 255, 255, 0.22)');
+
+            const annualGradient = annualCtx.createLinearGradient(0, 0, 0, 280);
+            annualGradient.addColorStop(0, 'rgba(255, 145, 84, 0.7)');
+            annualGradient.addColorStop(1, 'rgba(255, 145, 84, 0.05)');
+
+            if (kmPorMesChart) {
+                kmPorMesChart.data.labels = monthLabels;
+                kmPorMesChart.data.datasets[0].data = kmByMonth;
+                kmPorMesChart.update();
+            } else {
+                kmPorMesChart = new Chart(kmCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: monthLabels,
+                        datasets: [{
+                            label: 'Km por mês',
+                            data: kmByMonth,
+                            backgroundColor: kmGradient,
+                            borderColor: '#00ffff',
+                            borderWidth: 1,
+                            borderRadius: 10,
+                            borderSkipped: false,
+                        }],
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { beginAtZero: true, grid: { color: 'rgba(120,145,190,0.15)' }, ticks: { color: '#9eb3d6' } },
+                            x: { grid: { display: false }, ticks: { color: '#9eb3d6' } },
+                        },
+                    },
+                });
+            }
+
+            if (visaoAnualChart) {
+                visaoAnualChart.data.labels = monthLabels;
+                visaoAnualChart.data.datasets[0].data = cumulative;
+                visaoAnualChart.update();
+            } else {
+                visaoAnualChart = new Chart(annualCtx, {
+                    type: 'line',
+                    data: {
+                        labels: monthLabels,
+                        datasets: [{
+                            label: 'Evolução anual',
+                            data: cumulative,
+                            borderColor: '#ff9154',
+                            backgroundColor: annualGradient,
+                            borderWidth: 3,
+                            tension: 0.33,
+                            fill: true,
+                            pointRadius: 3,
+                            pointBackgroundColor: '#ffd3b7',
+                        }],
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { beginAtZero: true, grid: { color: 'rgba(120,145,190,0.15)' }, ticks: { color: '#9eb3d6' } },
+                            x: { grid: { color: 'rgba(120,145,190,0.12)' }, ticks: { color: '#9eb3d6' } },
+                        },
+                    },
+                });
+            }
+        }
+
+        function renderAnalisesByYear(year) {
+            const analytics = buildYearlyAnalytics(fuelRecords, year);
+            updateAnalisesMetricas(analytics.kmByMonth);
+            createOrUpdateAnaliseCharts(analytics.kmByMonth, analytics.cumulative);
+        }
+
+        function renderPainelCharts() {
+            const lineCanvas = document.getElementById('lineChart');
+            const barCanvas = document.getElementById('barChart');
+            const lineEmpty = document.getElementById('lineChartEmpty');
+            const barEmpty = document.getElementById('barChartEmpty');
+            if (!lineCanvas || !barCanvas) {
+                return;
+            }
+
+            const temDadosLinha = lineLabels.length > 0 && lineValues.length > 0;
+            const temDadosBarra = barLabels.length > 0 && barValues.length > 0;
+
+            lineCanvas.style.display = temDadosLinha ? 'block' : 'none';
+            barCanvas.style.display = temDadosBarra ? 'block' : 'none';
+            if (lineEmpty) {
+                lineEmpty.style.display = temDadosLinha ? 'none' : 'block';
+            }
+            if (barEmpty) {
+                barEmpty.style.display = temDadosBarra ? 'none' : 'block';
+            }
+
+            if (!temDadosLinha && !temDadosBarra) {
+                return;
+            }
+
+            const ctxLine = lineCanvas.getContext('2d');
+            const lineGradient = ctxLine.createLinearGradient(0, 0, 0, 260);
+            lineGradient.addColorStop(0, 'rgba(58, 226, 242, 0.46)');
+            lineGradient.addColorStop(1, 'rgba(58, 226, 242, 0.02)');
+
+            if (temDadosLinha && painelLineChart) {
+                painelLineChart.data.labels = lineLabels;
+                painelLineChart.data.datasets[0].data = lineValues;
+                painelLineChart.update();
+            } else if (temDadosLinha) {
+                painelLineChart = new Chart(ctxLine, {
+                    type: 'line',
+                    data: {
+                        labels: lineLabels,
+                        datasets: [{
+                            label: 'Km/L',
+                            data: lineValues,
+                            borderColor: '#3ae2f2',
+                            backgroundColor: lineGradient,
+                            borderWidth: 3,
+                            tension: 0.34,
+                            fill: true,
+                            pointRadius: 4,
+                            pointHoverRadius: 5,
+                            pointBackgroundColor: '#7ef4ff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { grid: { color: 'rgba(120,145,190,0.16)' }, ticks: { color: '#9eb3d6' } },
+                            x: { grid: { color: 'rgba(120,145,190,0.1)' }, ticks: { color: '#9eb3d6' } }
+                        }
+                    }
+                });
+            }
+
+            if (temDadosBarra) {
+                const ctxBar = barCanvas.getContext('2d');
+                const barGradient = ctxBar.createLinearGradient(0, 0, 0, 260);
+                barGradient.addColorStop(0, 'rgba(255, 145, 84, 0.92)');
+                barGradient.addColorStop(1, 'rgba(58, 226, 242, 0.5)');
+
+                if (painelBarChart) {
+                    painelBarChart.data.labels = barLabels;
+                    painelBarChart.data.datasets[0].data = barValues;
+                    painelBarChart.update();
+                } else {
+                    painelBarChart = new Chart(ctxBar, {
+                        type: 'bar',
+                        data: {
+                            labels: barLabels,
+                            datasets: [{ label: 'R$', data: barValues, backgroundColor: barGradient, borderRadius: 8, borderSkipped: false }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { display: false } },
+                            scales: {
+                                y: { beginAtZero: true, grid: { color: 'rgba(120,145,190,0.15)' }, ticks: { color: '#9eb3d6' } },
+                                x: { grid: { display: false }, ticks: { color: '#9eb3d6' } }
+                            }
+                        }
+                    });
                 }
             }
-        });
 
-        const ctxBar = document.getElementById('barChart').getContext('2d');
-        const barGradient = ctxBar.createLinearGradient(0, 0, 0, 260);
-        barGradient.addColorStop(0, 'rgba(255, 145, 84, 0.92)');
-        barGradient.addColorStop(1, 'rgba(58, 226, 242, 0.5)');
+            setTimeout(() => {
+                painelLineChart?.resize();
+                painelBarChart?.resize();
+            }, 60);
+        }
 
-        new Chart(ctxBar, {
-            type: 'bar',
-            data: {
-                labels: {{ labels_barra | safe }},
-                datasets: [{ label: 'R$', data: {{ values_barra | safe }}, backgroundColor: barGradient, borderRadius: 8, borderSkipped: false }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: { beginAtZero: true, grid: { color: 'rgba(120,145,190,0.15)' }, ticks: { color: '#9eb3d6' } },
-                    x: { grid: { display: false }, ticks: { color: '#9eb3d6' } }
+        (function initSpaViews() {
+            const views = Array.from(document.querySelectorAll('.app-view'));
+            const navButtons = document.querySelectorAll('.topbar-view-link');
+            const yearSelect = document.getElementById('analisesAnoSelect');
+            const pathToView = {
+                '/': 'painelView',
+                '/analises': 'analisesView',
+                '/garagem': 'oficinaView',
+                '/veiculos': 'veiculosView',
+            };
+            const viewToPath = Object.entries(pathToView).reduce((acc, [path, viewId]) => {
+                acc[viewId] = path;
+                return acc;
+            }, {});
+
+            const yearsFromData = fuelRecords
+                .map(item => parseFuelDate(String(item.data || '')))
+                .filter(Boolean)
+                .map(date => date.getFullYear());
+
+            const fallbackYear = new Date().getFullYear();
+            const fallbackYears = [fallbackYear - 2, fallbackYear - 1, fallbackYear];
+            const years = Array.from(new Set([...yearsFromData, ...fallbackYears])).sort((a, b) => b - a);
+
+            yearSelect.innerHTML = years.map(year => `<option value="${year}">${year}</option>`).join('');
+            yearSelect.value = String(years[0] || fallbackYear);
+
+            function switchView(targetId) {
+                const nextView = document.getElementById(targetId);
+                if (!nextView) {
+                    return;
+                }
+
+                views.forEach((view) => {
+                    if (view.id === targetId) {
+                        view.style.display = 'block';
+                        requestAnimationFrame(() => {
+                            view.classList.add('is-active');
+                        });
+                        return;
+                    }
+
+                    view.classList.remove('is-active');
+                    setTimeout(() => {
+                        if (!view.classList.contains('is-active')) {
+                            view.style.display = 'none';
+                        }
+                    }, 240);
+                });
+
+                navButtons.forEach(button => {
+                    button.classList.toggle('active', button.dataset.viewTarget === targetId);
+                });
+
+                const nextPath = viewToPath[targetId] || '/';
+                if (window.location.pathname !== nextPath) {
+                    window.history.pushState({ view: targetId }, '', nextPath);
+                }
+
+                const showAnalises = targetId === 'analisesView';
+                if (showAnalises) {
+                    renderAnalisesByYear(Number(yearSelect.value));
+                } else if (targetId === 'painelView') {
+                    renderPainelCharts();
                 }
             }
-        });
+
+            navButtons.forEach(button => {
+                button.addEventListener('click', function (event) {
+                    event.preventDefault();
+                    switchView(this.dataset.viewTarget);
+                });
+            });
+
+            yearSelect.addEventListener('change', function () {
+                renderAnalisesByYear(Number(this.value));
+            });
+
+            const initialTarget = pathToView[window.location.pathname] || 'painelView';
+            switchView(initialTarget);
+
+            window.addEventListener('popstate', function () {
+                const target = pathToView[window.location.pathname] || 'painelView';
+                switchView(target);
+            });
+        })();
+        renderPainelCharts();
 
         document.querySelectorAll('input[type="number"], input[inputmode="decimal"]').forEach(input => {
             input.addEventListener('input', function() { this.value = this.value.replace(/,/g, '.'); });
@@ -417,6 +777,177 @@
             }
         });
 
+        (function() {
+            const progressContainer = document.querySelector('.oleo-progress-bar-bg');
+            const progressFill = document.getElementById('oleoProgressBarFill');
+            const restanteSpan = document.querySelector('.oleo-restante-text span');
+            const ajustarBtn = document.getElementById('btnAjustarOleo');
+            const calibrarForm = document.getElementById('calibrarOleoForm');
+            const kmFaltamInput = document.getElementById('kmFaltamOleoInput');
+
+            if (!progressContainer || !progressFill) {
+                return;
+            }
+
+            function aplicarVisualSaudeOleo(kmRestante, intervaloTroca) {
+                const kmRestanteSeguro = Math.max(0, Number(kmRestante || 0));
+                const intervaloSeguro = Math.max(1, Number(intervaloTroca || 1000));
+                const vidaUtilPercentual = Math.max(0, Math.min(100, (kmRestanteSeguro / intervaloSeguro) * 100));
+                const vidaNormalizada = vidaUtilPercentual / 100;
+
+                function lerp(start, end, ratio) {
+                    return Math.round(start + (end - start) * ratio);
+                }
+
+                let r;
+                let g;
+                let b;
+
+                if (vidaNormalizada > 0.5) {
+                    const ratio = (vidaNormalizada - 0.5) / 0.5;
+                    r = lerp(255, 0, ratio);
+                    g = 255;
+                    b = lerp(0, 255, ratio);
+                } else {
+                    const ratio = vidaNormalizada / 0.5;
+                    r = 255;
+                    g = lerp(90, 255, ratio);
+                    b = lerp(42, 0, ratio);
+                }
+
+                const corAtual = `rgb(${r}, ${g}, ${b})`;
+                const corBrilho = `rgba(${r}, ${g}, ${b}, 0.42)`;
+
+                progressFill.style.width = `${vidaUtilPercentual.toFixed(1)}%`;
+                progressFill.style.setProperty('--oleo-bar-color', corAtual);
+                progressFill.style.setProperty('--oleo-bar-glow', corBrilho);
+
+                if (vidaUtilPercentual < 10) {
+                    progressFill.classList.add('is-critical');
+                } else {
+                    progressFill.classList.remove('is-critical');
+                }
+
+                if (restanteSpan) {
+                    restanteSpan.textContent = String(Math.round(kmRestanteSeguro));
+                }
+            }
+
+            const kmRestante = Number(progressContainer.dataset.kmRestante || 0);
+            const intervaloTroca = Math.max(1, Number(progressContainer.dataset.intervaloTroca || 1000));
+            aplicarVisualSaudeOleo(kmRestante, intervaloTroca);
+
+            ajustarBtn?.addEventListener('click', function() {
+                if (!calibrarForm || !kmFaltamInput) {
+                    return;
+                }
+
+                const abriu = calibrarForm.style.display === 'none' || calibrarForm.style.display === '';
+                calibrarForm.style.display = abriu ? 'flex' : 'none';
+                if (abriu) {
+                    const kmAtualForm = Number(progressContainer.dataset.kmRestante || 0);
+                    kmFaltamInput.value = String(Math.max(0, Math.round(kmAtualForm)));
+                    kmFaltamInput.focus();
+                    kmFaltamInput.select();
+                }
+            });
+
+            calibrarForm?.addEventListener('submit', async function(event) {
+                event.preventDefault();
+                if (!kmFaltamInput) {
+                    return;
+                }
+
+                const kmFaltam = Math.max(0, Number(kmFaltamInput.value || 0));
+                if (Number.isNaN(kmFaltam)) {
+                    alert('Informe um número válido de KM restante.');
+                    return;
+                }
+
+                const submitBtn = calibrarForm.querySelector('.oleo-calibrar-save');
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = 'Salvando...';
+                }
+
+                try {
+                    const response = await fetch('/calibrar_saude_oleo', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            km_faltam: kmFaltam,
+                        }),
+                    });
+
+                    const data = await response.json();
+                    if (!response.ok || !data.sucesso) {
+                        throw new Error(data.mensagem || 'Falha ao calibrar saúde do óleo.');
+                    }
+
+                    progressContainer.dataset.kmRestante = String(data.km_restante || 0);
+                    progressContainer.dataset.intervaloTroca = String(data.intervalo_troca || intervaloTroca);
+                    aplicarVisualSaudeOleo(data.km_restante || 0, data.intervalo_troca || intervaloTroca);
+                    calibrarForm.style.display = 'none';
+                } catch (error) {
+                    alert(error.message || 'Erro ao calibrar saúde do óleo.');
+                } finally {
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = 'Salvar';
+                    }
+                }
+            });
+
+            kmFaltamInput?.addEventListener('input', function() {
+                const maxIntervalo = Number(progressContainer.dataset.intervaloTroca || 1000);
+                if (Number(this.value) > maxIntervalo) {
+                    this.value = String(maxIntervalo);
+                }
+                if (Number(this.value) < 0) {
+                    this.value = '0';
+                }
+            });
+
+            kmFaltamInput?.addEventListener('keydown', function(event) {
+                if (event.key === 'Escape' && calibrarForm) {
+                    calibrarForm.style.display = 'none';
+                }
+            });
+
+            calibrarForm?.addEventListener('click', function(event) {
+                event.stopPropagation();
+            });
+
+            document.addEventListener('click', function(event) {
+                if (!calibrarForm || calibrarForm.style.display !== 'flex') {
+                    return;
+                }
+                if (!calibrarForm.contains(event.target) && !ajustarBtn?.contains(event.target)) {
+                    calibrarForm.style.display = 'none';
+                }
+            });
+        })();
+
+        (function() {
+            const greetingElement = document.getElementById('motoNoirGreeting');
+            if (!greetingElement) {
+                return;
+            }
+
+            const hour = new Date().getHours();
+            let greetingText = 'Boa noite, Eduardo!';
+
+            if (hour >= 5 && hour <= 11) {
+                greetingText = 'Bom dia, Eduardo!';
+            } else if (hour >= 12 && hour <= 17) {
+                greetingText = 'Boa tarde, Eduardo!';
+            }
+
+            greetingElement.textContent = greetingText;
+        })();
+
         document.getElementById('btnTrocaOleo')?.addEventListener('click', async function() {
             const veiculo_id = this.dataset.veiculoId;
             if (!veiculo_id) {
@@ -425,7 +956,7 @@
             }
 
             this.classList.add('loading');
-            this.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Salvando...';
+            this.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
 
             try {
                 const response = await fetch('/registrar_troca_oleo', {
@@ -446,9 +977,8 @@
             } catch (error) {
                 alert(error.message || 'Erro ao registrar troca de óleo.');
                 this.classList.remove('loading');
-                this.innerHTML = '<i class="fa-solid fa-check"></i> Realizei Troca';
+                this.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i>';
             }
         });
     </script>
-</body>
-</html>
+{% endblock %}

@@ -12,7 +12,7 @@ Write-Host 'Ativando ambiente virtual...' -ForegroundColor Yellow
 
 Write-Host 'Atualizando pip e instalando dependencias...' -ForegroundColor Yellow
 python -m pip install --upgrade pip
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 
 if (-not (Test-Path '.env') -and (Test-Path '.env.example')) {
     Copy-Item '.env.example' '.env'
@@ -20,9 +20,9 @@ if (-not (Test-Path '.env') -and (Test-Path '.env.example')) {
     Write-Host 'Ajuste FIREBASE_KEY no .env antes de continuar.' -ForegroundColor Yellow
 }
 
-$env:FLASK_APP = 'app.py'
+$env:FLASK_APP = 'backend.app'
 if (-not $env:FLASK_ENV) { $env:FLASK_ENV = 'development' }
 if (-not $env:PORT) { $env:PORT = '5000' }
 
 Write-Host "Iniciando Flask em http://127.0.0.1:$env:PORT" -ForegroundColor Green
-flask run --debug --port $env:PORT
+python -m flask run --debug --port $env:PORT

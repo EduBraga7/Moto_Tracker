@@ -36,7 +36,7 @@ Atalho alternativo sem script:
 1. python -m venv .venv
 2. .\.venv\Scripts\Activate.ps1
 3. pip install -r requirements.txt
-4. flask run --debug
+4. flask --app backend.app run --debug
 
 Se o Windows abrir um .txt ao inves de executar:
 

@@ -1,17 +1,14 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Editar Abastecimento</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Teko:wght@500;600;700&display=swap" rel="stylesheet">
-</head>
-<body>
+{% extends 'base.html' %}
 
-    <div class="container">
+{% block title %}Editar Abastecimento{% endblock %}
+
+{% block head_extra %}
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Teko:wght@500;600;700&display=swap" rel="stylesheet">
+{% endblock %}
+
+{% block page_heading %}Editar abastecimento{% endblock %}
+
+{% block content %}
         <header>
             <h1 class="page-title">✏️ Editar abastecimento</h1>
         </header>
@@ -42,12 +39,12 @@
                 </div>
             </form>
         </section>
-    </div>
+{% endblock %}
 
+{% block scripts %}
     <script>
         document.querySelectorAll('input[type="number"]').forEach(input => {
             input.addEventListener('input', function() { this.value = this.value.replace(/,/g, '.'); });
         });
     </script>
-</body>
-</html>
+{% endblock %}
